@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TrackTeam — Partage de position</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, update, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
+  authDomain: "mapaet-fc2bb.firebaseapp.com",
+  databaseURL: "https://mapaet-fc2bb-default-rtdb.firebaseio.com",
+  projectId: "mapaet-fc2bb",
+  storageBucket: "mapaet-fc2bb.firebasestorage.app",
+  messagingSenderId: "74097061036",
+  appId: "1:74097061036:web:c4642ee6b59b7401200309"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window._db = db;
+window._ref = ref;
+window._set = set;
+window._update = update;
+window._serverTimestamp = serverTimestamp;
+window._onDisconnect = onDisconnect;
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebaseReady'));
+</script>
+
+<style>
+:root {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c24;
+  --border: #1e2330;
+  --accent: #00e5a0;
+  --accent2: #0099ff;
+  --danger: #ff4757;
+  --warn: #ffa502;
+  --text: #e8ecf0;
+  --text2: #7a8494;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(0,229,160,.08) 0%, transparent 60%);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.logo {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.2rem; font-weight: 800;
+  margin-bottom: 28px; color: var(--text2);
+}
+.logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+
+.avatar {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.6rem; font-weight: 800;
+  color: #0a0c10;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 30px rgba(0,229,160,.3);
+}
+
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem; font-weight: 800;
+  margin-bottom: 4px;
+}
+.subtitle { color: var(--text2); font-size: .88rem; margin-bottom: 28px; }
+
+/* STATUS */
+.status-ring {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: border-color .3s;
+}
+.status-ring.active { border-color: var(--accent); box-shadow: 0 0 30px rgba(0,229,160,.2); }
+.status-ring.active::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: .3;
+  animation: ripple 2s infinite;
+}
+@keyframes ripple { 0%{transform:scale(1);opacity:.3} 100%{transform:scale(1.3);opacity:0} }
+
+.status-icon { font-size: 2.2rem; }
+
+.status-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 700;
+  margin-bottom: 6px;
+}
+.status-text.green { color: var(--accent); }
+.status-text.red { color: var(--danger); }
+.status-text.orange { color: var(--warn); }
+
+.coords {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: .82rem;
+  color: var(--text2);
+  text-align: left;
+  display: none;
+}
+.coords.show { display: block; }
+.coord-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.coord-row:last-child { margin-bottom: 0; }
+.coord-label { color: var(--text2); }
+.coord-val { color: var(--text); font-weight: 500; }
+
+/* BUTTONS */
+.btn-main {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem; font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  margin-bottom: 10px;
+}
+.btn-start {
+  background: var(--accent);
+  color: #0a0c10;
+}
+.btn-start:hover { background: #00c988; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,160,.3); }
+.btn-start:active { transform: translateY(0); }
+
+.btn-stop {
+  background: var(--danger);
+  color: #fff;
+  display: none;
+}
+.btn-stop:hover { background: #e03545; }
+
+.info-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: .8rem;
+  color: var(--text2);
+  text-align: left;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.info-box strong { color: var(--text); }
+
+.update-counter {
+  font-size: .75rem;
+  color: var(--text2);
+  margin-top: 8px;
+}
+.update-counter span { color: var(--accent); font-weight: 600; }
+
+.error-msg {
+  background: rgba(255,71,87,.1);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: .82rem;
+  color: var(--danger);
+  margin: 10px 0;
+  display: none;
+  text-align: left;
+}
+.error-msg.show { display: block; }
+
+/* Permission screen */
+.perm-screen { display: none; }
+.perm-screen.show { display: block; }
+.main-screen.hide { display: none; }
+
+.permission-steps {
+  text-align: left;
+  margin: 16px 0;
+}
+.step {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; font-size: .85rem; color: var(--text2);
+}
+.step-num {
+  width: 22px; height: 22px; min-width: 22px;
+  background: var(--accent); color: #0a0c10;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .72rem; font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo"><div class="logo-dot"></div>TrackTeam</div>
+
+  <div class="main-screen" id="mainScreen">
+    <div class="avatar" id="avatarEl">??</div>
+    <h1 id="empNameEl">Chargement...</h1>
+    <p class="subtitle" id="companyEl">Entreprise</p>
+
+    <div class="status-ring" id="statusRing">
+      <span class="status-icon" id="statusIcon">📍</span>
+    </div>
+
+    <div class="status-text" id="statusText">Prêt à partager</div>
+
+    <div class="coords" id="coordsBox">
+      <div class="coord-row"><span class="coord-label">Latitude</span><span class="coord-val" id="coordLat">—</span></div>
+      <div class="coord-row"><span class="coord-label">Longitude</span><span class="coord-val" id="coordLng">—</span></div>
+      <div class="coord-row"><span class="coord-label">Précision</span><span class="coord-val" id="coordAcc">—</span></div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="btn-main btn-start" id="btnStart" onclick="startTracking()">
+      📍 Démarrer le partage
+    </button>
+    <button class="btn-main btn-stop" id="btnStop" onclick="stopTracking()">
+      ⏹ Arrêter le partage
+    </button>
+
+    <div class="update-counter" id="updateCounter" style="display:none">
+      Positions envoyées : <span id="updateCount">0</span>
+    </div>
+
+    <div class="info-box">
+      <strong>Comment ça marche ?</strong><br>
+      Appuyez sur <em>Démarrer</em> pour envoyer votre position à votre patron en temps réel.<br>
+      Votre position est mise à jour toutes les <strong>10 secondes</strong>.<br>
+      Vous pouvez arrêter à tout moment.
+    </div>
+  </div>
+
+  <!-- Écran d'erreur permission -->
+  <div class="perm-screen" id="permScreen">
+    <div style="font-size:3rem;margin-bottom:16px">🔒</div>
+    <h1 style="font-size:1.2rem;margin-bottom:8px">Accès à la position refusé</h1>
+    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Pour partager votre position, autorisez la géolocalisation dans votre navigateur :</p>
+    <div class="permission-steps">
+      <div class="step"><div class="step-num">1</div><span>Appuyez sur l'icône 🔒 ou ⓘ dans la barre d'adresse</span></div>
+      <div class="step"><div class="step-num">2</div><span>Allez dans <strong>Autorisations</strong> → <strong>Position</strong></span></div>
+      <div class="step"><div class="step-num">3</div><span>Sélectionnez <strong>Autoriser</strong></span></div>
+      <div class="step"><div class="step-num">4</div><span>Rechargez la page et réessayez</span></div>
+    </div>
+    <button class="btn-main btn-start" onclick="location.reload()">🔄 Réessayer</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  PARAMS URL
+// ══════════════════════════════════════════════
+const params = new URLSearchParams(window.location.search);
+const companyCode = params.get('company') || 'DEMO';
+const empId = params.get('emp') || 'emp_test';
+const empName = decodeURIComponent(params.get('name') || 'Employé');
+
+let watchId = null;
+let updateCount = 0;
+let db, _ref, _update, _onDisconnect, _set;
+let tracking = false;
+let trailPoints = [];
+
+// ══════════════════════════════════════════════
+//  INIT UI
+// ══════════════════════════════════════════════
+document.getElementById('empNameEl').textContent = empName;
+document.getElementById('companyEl').textContent = 'Code : ' + companyCode;
+const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+document.getElementById('avatarEl').textContent = initials || '??';
+
+// ══════════════════════════════════════════════
+//  FIREBASE
+// ══════════════════════════════════════════════
+window.addEventListener('firebaseReady', () => {
+  db = window._db;
+  _ref = window._ref;
+  _update = window._update;
+  _onDisconnect = window._onDisconnect;
+  _set = window._set;
+});
+
+// ══════════════════════════════════════════════
+//  TRACKING
+// ══════════════════════════════════════════════
+function startTracking() {
+  if (!navigator.geolocation) {
+    showError('La géolocalisation n\'est pas supportée par votre navigateur.');
+    return;
+  }
+
+  setStatus('requesting');
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      setStatus('active');
+      document.getElementById('btnStart').style.display = 'none';
+      document.getElementById('btnStop').style.display = 'block';
+      document.getElementById('updateCounter').style.display = 'block';
+      tracking = true;
+      sendPosition(pos);
+
+      // Mise à jour toutes les 10 secondes
+      watchId = navigator.geolocation.watchPosition(
+        sendPosition,
+        handleGeoError,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+      );
+
+      // Marquer hors ligne si fermeture
+      if (db) {
+        const empRef = _ref(db, `companies/${companyCode}/employees/${empId}`);
+        _onDisconnect(empRef).update({ online: false });
+      }
+    },
+    handleGeoError,
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+function stopTracking() {
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  tracking = false;
+  setStatus('stopped');
+
+  if (db) {
+    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
+  }
+
+  document.getElementById('btnStart').style.display = 'block';
+  document.getElementById('btnStop').style.display = 'none';
+}
+
+function sendPosition(pos) {
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  const acc = Math.round(pos.coords.accuracy);
+  const ts = Date.now();
+
+  trailPoints.push({ lat, lng, ts });
+  if (trailPoints.length > 50) trailPoints.shift(); // garder max 50 points
+
+  // UI
+  document.getElementById('coordsBox').classList.add('show');
+  document.getElementById('coordLat').textContent = lat.toFixed(6);
+  document.getElementById('coordLng').textContent = lng.toFixed(6);
+  document.getElementById('coordAcc').textContent = `± ${acc} m`;
+  updateCount++;
+  document.getElementById('updateCount').textContent = updateCount;
+
+  // Firebase
+  if (db) {
+    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
+      lat, lng, online: true, lastSeen: ts,
+      accuracy: acc, trail: trailPoints
+    });
+  } else {
+    console.log('Position (mode local):', lat, lng);
+  }
+}
+
+function handleGeoError(err) {
+  if (err.code === err.PERMISSION_DENIED) {
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('permScreen').classList.add('show');
+  } else if (err.code === err.POSITION_UNAVAILABLE) {
+    showError('Position indisponible. Activez le GPS sur votre téléphone.');
+    setStatus('error');
+  } else if (err.code === err.TIMEOUT) {
+    showError('Délai dépassé. Vérifiez votre connexion internet et GPS.');
+    setStatus('error');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  UI STATES
+// ══════════════════════════════════════════════
+function setStatus(state) {
+  const ring = document.getElementById('statusRing');
+  const icon = document.getElementById('statusIcon');
+  const text = document.getElementById('statusText');
+
+  ring.className = 'status-ring';
+  text.className = 'status-text';
+
+  switch(state) {
+    case 'requesting':
+      icon.textContent = '⏳';
+      text.textContent = 'Obtention de la position...';
+      text.classList.add('orange');
+      break;
+    case 'active':
+      ring.classList.add('active');
+      icon.textContent = '✅';
+      text.textContent = 'Position partagée en direct';
+      text.classList.add('green');
+      break;
+    case 'stopped':
+      icon.textContent = '⏹';
+      text.textContent = 'Partage arrêté';
+      text.classList.add('red');
+      break;
+    case 'error':
+      icon.textContent = '❌';
+      text.textContent = 'Erreur de géolocalisation';
+      text.classList.add('red');
+      break;
+    default:
+      icon.textContent = '📍';
+      text.textContent = 'Prêt à partager';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+// Garder l'écran allumé si supporté
+if ('wakeLock' in navigator) {
+  navigator.wakeLock.request('screen').catch(() => {});
+}
+</script>
+</body>
+</html>
