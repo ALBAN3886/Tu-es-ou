@@ -226,7 +226,16 @@ input:focus { border-color: var(--accent); }
 #map { width: 100%; height: 100%; min-height: calc(100vh - 61px); }
 
 /* Leaflet dark theme fix */
-.leaflet-tile { filter: brightness(.8) saturate(.9) hue-rotate(190deg) invert(.05); }
+/* Marqueur pulsant */
+@keyframes markerPulse {
+  0% { transform: scale(1); opacity: .5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Popup style */
+.leaflet-popup-content-wrapper { background: #111318; border: 1px solid #1e2330; color: #e8ecf0; border-radius: 10px; }
+.leaflet-popup-tip { background: #111318; }
+.leaflet-popup-content { font-family: 'DM Sans', sans-serif; font-size: .88rem; }
 
 .map-overlay {
   position: absolute; top: 16px; left: 16px; z-index: 500;
@@ -498,9 +507,14 @@ let db, _ref, _set, _onValue, _push, _remove;
 // ══════════════════════════════════════════════
 function initMap() {
   map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+
+  // Tuiles CartoDB Voyager — routes très détaillées, style clair
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    maxZoom: 20,
+    subdomains: 'abcd'
   }).addTo(map);
+
   L.control.zoom({ position: 'topright' }).addTo(map);
 
   map.on('click', function(e) {
@@ -567,13 +581,12 @@ function connectCode() {
   if (!code) { showToast('Entrez un code'); return; }
   localStorage.setItem('tt_code', code);
   document.getElementById('companyCode').value = code;
-  // Réinitialiser les markers
   Object.keys(markers).forEach(id => { map.removeLayer(markers[id]); });
   Object.keys(polylines).forEach(id => { map.removeLayer(polylines[id]); });
-  markers = {}; polylines = {}; employees = {};
+  markers = {}; polylines = {}; employees = {}; activeEmpId = null;
   renderEmployees(); updateStats();
   if (db) listenEmployees();
-  showToast('Connecté au code : ' + code);
+  showToast('Connecté : ' + code);
 }
 
 function copyCode() {
@@ -629,7 +642,6 @@ function removeEmployee(id) {
 
 function listenEmployees() {
   const code = localStorage.getItem('tt_code') || 'DEMO';
-  // Détacher l'ancien listener si existant
   if (currentListener) { currentListener(); currentListener = null; }
   currentListener = _onValue(_ref(db, `companies/${code}/employees`), snap => {
     employees = snap.val() || {};
@@ -701,21 +713,65 @@ function updateMarkers() {
     if (!emp.lat || !emp.lng) return;
     const color = COLORS[i % COLORS.length];
     const latlng = [+emp.lat, +emp.lng];
+    const isOnline = emp.online || false;
+    const initials = emp.name.slice(0,2).toUpperCase();
+
+    // Marqueur amélioré : grand, pulsant si en ligne, avec nom en dessous
+    const pulse = isOnline ? `
+      <div style="position:absolute;inset:-8px;border-radius:50%;border:3px solid ${color};opacity:0.5;animation:markerPulse 1.8s ease-out infinite;pointer-events:none"></div>
+      <div style="position:absolute;inset:-16px;border-radius:50%;border:2px solid ${color};opacity:0.2;animation:markerPulse 1.8s ease-out infinite .4s;pointer-events:none"></div>
+    ` : '';
+
+    const html = `
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+        <div style="position:relative;width:46px;height:46px">
+          ${pulse}
+          <div style="width:46px;height:46px;background:${color};border-radius:50%;border:3px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;position:relative;z-index:1">
+            <span style="font-size:.85rem;font-weight:800;color:#0a0c10;font-family:Syne,sans-serif">${initials}</span>
+          </div>
+          <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid ${color};z-index:1"></div>
+        </div>
+        <div style="margin-top:6px;background:rgba(0,0,0,.75);color:#fff;font-size:.72rem;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;font-family:'DM Sans',sans-serif;border:1px solid rgba(255,255,255,.15)">${emp.name}</div>
+      </div>`;
 
     const icon = L.divIcon({
       className: '',
-      html: `<div style="width:34px;height:34px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center">
-              <span style="transform:rotate(45deg);font-size:.7rem;font-weight:700;color:#0a0c10">${emp.name.slice(0,2).toUpperCase()}</span>
-             </div>`,
-      iconSize: [34, 34],
-      iconAnchor: [17, 34]
+      html,
+      iconSize: [80, 80],
+      iconAnchor: [40, 64]
     });
 
+    const wasNew = !markers[id];
     if (markers[id]) {
       markers[id].setLatLng(latlng).setIcon(icon);
     } else {
       markers[id] = L.marker(latlng, { icon }).addTo(map);
-      markers[id].bindPopup(`<b>${emp.name}</b><br>${emp.role}`);
+    }
+
+    // Popup détaillée
+    const acc = emp.accuracy ? `± ${emp.accuracy} m` : '—';
+    const lastSeen = emp.lastSeen ? timeAgo(emp.lastSeen) : 'jamais';
+    markers[id].bindPopup(`
+      <div style="min-width:160px">
+        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:1rem;margin-bottom:4px">${emp.name}</div>
+        <div style="color:#7a8494;font-size:.8rem;margin-bottom:8px">💼 ${emp.role}</div>
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:3px">
+          <span>${isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}</span>
+          <span>📍 ${(+emp.lat).toFixed(5)}, ${(+emp.lng).toFixed(5)}</span>
+          <span>🎯 Précision : ${acc}</span>
+          <span>🕐 ${lastSeen}</span>
+        </div>
+      </div>
+    `);
+
+    // Auto-zoom sur l'employé actif quand sa position change
+    if (!wasNew && activeEmpId === id) {
+      map.panTo(latlng, { animate: true, duration: 0.8 });
+    }
+    // Premier apparition → zoom automatique
+    if (wasNew) {
+      map.flyTo(latlng, 17, { duration: 1.5 });
+      activeEmpId = id;
     }
 
     // Trail
@@ -723,7 +779,7 @@ function updateMarkers() {
     if (emp.trail) {
       if (polylines[id]) map.removeLayer(polylines[id]);
       if (emp.trail.length > 1) {
-        polylines[id] = L.polyline(emp.trail.map(p => [p.lat, p.lng]), { color, weight: 2, opacity: .5, dashArray: '4 6' }).addTo(map);
+        polylines[id] = L.polyline(emp.trail.map(p => [p.lat, p.lng]), { color, weight: 3, opacity: .7, dashArray: '5 7' }).addTo(map);
       }
     }
   });
@@ -732,8 +788,9 @@ function updateMarkers() {
 function focusEmployee(id) {
   const emp = employees[id];
   if (!emp || !emp.lat) { showToast('Position inconnue pour cet employé'); return; }
-  map.flyTo([+emp.lat, +emp.lng], 14, { duration: 1.2 });
-  if (markers[id]) markers[id].openPopup();
+  activeEmpId = id;
+  map.flyTo([+emp.lat, +emp.lng], 18, { duration: 1.2 });
+  setTimeout(() => { if (markers[id]) markers[id].openPopup(); }, 1300);
 }
 
 function fitAllMarkers() {
