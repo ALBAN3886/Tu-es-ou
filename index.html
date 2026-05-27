@@ -365,11 +365,14 @@ input:focus { border-color: var(--accent); }
         <label>Nom de votre entreprise</label>
         <input type="text" id="companyName" placeholder="ex: Mon Entreprise SARL" oninput="saveCompanyName()">
         <label>Code entreprise (partagez-le à vos employés)</label>
-        <div class="code-display">
-          <span id="companyCode">—</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="companyCode" placeholder="ex: 4FELGG" style="font-family:monospace;font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:3px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
           <button class="btn btn-outline btn-sm btn-icon" onclick="copyCode()" title="Copier">📋</button>
         </div>
-        <button class="btn btn-accent" onclick="generateCode()" style="width:100%">🔄 Générer un code</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-accent" onclick="connectCode()" style="flex:1">✅ Connecter</button>
+          <button class="btn btn-outline" onclick="generateCode()" style="flex:1">🔄 Nouveau code</button>
+        </div>
       </div>
     </div>
 
@@ -534,11 +537,13 @@ setTimeout(() => {
 // ══════════════════════════════════════════════
 //  COMPANY
 // ══════════════════════════════════════════════
+let currentListener = null;
+
 function loadCompany() {
   const name = localStorage.getItem('tt_company') || '';
   const code = localStorage.getItem('tt_code') || '';
   if (name) document.getElementById('companyName').value = name;
-  if (code) document.getElementById('companyCode').textContent = code;
+  if (code) document.getElementById('companyCode').value = code;
   else generateCode();
 }
 
@@ -551,13 +556,28 @@ function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('companyCode').textContent = code;
+  document.getElementById('companyCode').value = code;
   localStorage.setItem('tt_code', code);
   showToast('Nouveau code généré : ' + code);
+  if (db) connectCode();
+}
+
+function connectCode() {
+  const code = document.getElementById('companyCode').value.trim().toUpperCase();
+  if (!code) { showToast('Entrez un code'); return; }
+  localStorage.setItem('tt_code', code);
+  document.getElementById('companyCode').value = code;
+  // Réinitialiser les markers
+  Object.keys(markers).forEach(id => { map.removeLayer(markers[id]); });
+  Object.keys(polylines).forEach(id => { map.removeLayer(polylines[id]); });
+  markers = {}; polylines = {}; employees = {};
+  renderEmployees(); updateStats();
+  if (db) listenEmployees();
+  showToast('Connecté au code : ' + code);
 }
 
 function copyCode() {
-  const code = document.getElementById('companyCode').textContent;
+  const code = document.getElementById('companyCode').value;
   navigator.clipboard.writeText(code).then(() => showToast('Code copié !'));
 }
 
@@ -609,7 +629,9 @@ function removeEmployee(id) {
 
 function listenEmployees() {
   const code = localStorage.getItem('tt_code') || 'DEMO';
-  _onValue(_ref(db, `companies/${code}/employees`), snap => {
+  // Détacher l'ancien listener si existant
+  if (currentListener) { currentListener(); currentListener = null; }
+  currentListener = _onValue(_ref(db, `companies/${code}/employees`), snap => {
     employees = snap.val() || {};
     renderEmployees();
     updateMarkers();
@@ -783,7 +805,7 @@ function renderHistory() {
 //  EMPLOYEE LINK
 // ══════════════════════════════════════════════
 function showEmployeeLink(id, name) {
-  const code = localStorage.getItem('tt_code') || 'DEMO';
+  const code = document.getElementById('companyCode').value || localStorage.getItem('tt_code') || 'DEMO';
   const base = window.location.href.replace('index.html','').replace(/\/$/, '');
   const url = `${base}/tracker.html?company=${code}&emp=${id}&name=${encodeURIComponent(name)}`;
   currentLinkUrl = url;
