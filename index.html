@@ -508,27 +508,22 @@ let db, _ref, _set, _onValue, _push, _remove;
 function initMap() {
   map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 6);
 
-  // Satellite ESRI — vue aérienne gratuite + labels des rues par dessus
-  const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '© Esri © USGS © USDA',
-    maxZoom: 19
+  // Google Maps Satellite — couverture mondiale complète
+  const satellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    attribution: '© Google Maps',
+    maxZoom: 20,
+    subdomains: ['0','1','2','3']
   });
 
-  const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '',
-    maxZoom: 19,
-    opacity: 0.9
-  });
-
-  satellite.addTo(map);
-  labels.addTo(map);
-
-  // Bouton pour basculer satellite / plan
+  // Plan OpenStreetMap
   const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
     maxZoom: 19
   });
 
+  satellite.addTo(map);
+
+  // Bouton bascule satellite / plan
   let isSatellite = true;
   const toggleBtn = L.control({ position: 'bottomright' });
   toggleBtn.onAdd = function() {
@@ -539,14 +534,12 @@ function initMap() {
       L.DomEvent.stopPropagation(e);
       if (isSatellite) {
         map.removeLayer(satellite);
-        map.removeLayer(labels);
         street.addTo(map);
         btn.innerHTML = '🛰 Satellite';
         isSatellite = false;
       } else {
         map.removeLayer(street);
         satellite.addTo(map);
-        labels.addTo(map);
         btn.innerHTML = '🗺 Plan';
         isSatellite = true;
       }
