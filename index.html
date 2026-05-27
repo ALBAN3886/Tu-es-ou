@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackTeam — Géolocalisation d'équipe</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ─── CONFIGURATION FIREBASE ───────────────────────────────────────────────
+// Remplace par ta config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
+  authDomain: "mapaet-fc2bb.firebaseapp.com",
+  databaseURL: "https://mapaet-fc2bb-default-rtdb.firebaseio.com",
+  projectId: "mapaet-fc2bb",
+  storageBucket: "mapaet-fc2bb.firebasestorage.app",
+  messagingSenderId: "74097061036",
+  appId: "1:74097061036:web:c4642ee6b59b7401200309"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window._db = db;
+window._ref = ref;
+window._set = set;
+window._onValue = onValue;
+window._push = push;
+window._remove = remove;
+window._serverTimestamp = serverTimestamp;
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebaseReady'));
+</script>
+
+<style>
+:root {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c24;
+  --border: #1e2330;
+  --accent: #00e5a0;
+  --accent2: #0099ff;
+  --danger: #ff4757;
+  --warn: #ffa502;
+  --text: #e8ecf0;
+  --text2: #7a8494;
+  --text3: #4a5266;
+  --online: #00e5a0;
+  --offline: #ff4757;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 1000;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.35rem; font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)} 50%{box-shadow:0 0 0 8px rgba(0,229,160,0)} }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+/* ── LAYOUT ── */
+.app { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 61px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-top {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.company-setup { display: flex; flex-direction: column; gap: 10px; }
+.company-setup label { font-size: .75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+
+input[type="text"], input[type="number"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .2s;
+}
+input:focus { border-color: var(--accent); }
+
+.code-display {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.code-display span { font-family: 'Syne', monospace; font-size: 1.1rem; font-weight: 700; color: var(--accent); letter-spacing: 3px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
+  transition: all .15s; text-decoration: none;
+}
+.btn-accent { background: var(--accent); color: #0a0c10; }
+.btn-accent:hover { background: #00c988; transform: translateY(-1px); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #e03545; }
+.btn-sm { padding: 6px 11px; font-size: .8rem; }
+.btn-icon { padding: 7px; border-radius: 7px; }
+
+/* ── EMPLOYEE LIST ── */
+.employees-header {
+  padding: 16px 20px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.employees-header h3 { font-family: 'Syne', sans-serif; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); }
+.badge { background: var(--accent); color: #0a0c10; border-radius: 20px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+
+.employees-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+.employees-list::-webkit-scrollbar { width: 4px; }
+.employees-list::-webkit-scrollbar-track { background: transparent; }
+.employees-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.employee-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.employee-card:hover, .employee-card.active { border-color: var(--accent); background: rgba(0,229,160,.05); }
+.employee-card.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--accent); border-radius:0 2px 2px 0; }
+
+.emp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.emp-name { font-weight: 600; font-size: .92rem; }
+.emp-status { display: flex; align-items: center; gap: 5px; font-size: .75rem; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-dot.online { background: var(--online); box-shadow: 0 0 6px var(--online); }
+.status-dot.offline { background: var(--offline); }
+
+.emp-meta { color: var(--text2); font-size: .78rem; display: flex; gap: 10px; flex-wrap: wrap; }
+.emp-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--text3);
+}
+.empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.empty-state p { font-size: .85rem; line-height: 1.6; }
+
+/* ── ADD EMPLOYEE MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  z-index: 2000; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 400px; max-width: 90vw;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal h2 { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-group label { font-size: .8rem; color: var(--text2); font-weight: 500; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+/* ── LINK MODAL ── */
+.link-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: .82rem;
+  color: var(--accent2);
+  word-break: break-all;
+  margin: 14px 0;
+  font-family: monospace;
+}
+.link-qr { text-align: center; margin: 10px 0; }
+.link-qr img { border-radius: 8px; border: 2px solid var(--border); }
+
+/* ── MAP ── */
+.map-container { position: relative; flex: 1; }
+#map { width: 100%; height: 100%; min-height: calc(100vh - 61px); }
+
+/* Leaflet dark theme fix */
+.leaflet-tile { filter: brightness(.8) saturate(.9) hue-rotate(190deg) invert(.05); }
+
+.map-overlay {
+  position: absolute; top: 16px; left: 16px; z-index: 500;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.stats-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex; gap: 20px;
+}
+.stat { text-align: center; }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
+.stat-val.green { color: var(--accent); }
+.stat-val.red { color: var(--danger); }
+.stat-val.blue { color: var(--accent2); }
+.stat-label { font-size: .7rem; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+
+/* Zone alert banner */
+.alert-banner {
+  position: absolute; top: 16px; right: 16px; z-index: 500;
+  background: var(--danger);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: none; align-items: center; gap: 10px;
+  animation: shake .4s ease;
+  max-width: 280px;
+}
+.alert-banner.show { display: flex; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.alert-banner p { font-size: .85rem; font-weight: 500; }
+
+/* ── HISTORY PANEL ── */
+.history-panel {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 400;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  transition: transform .3s ease;
+  transform: translateY(100%);
+  max-height: 260px;
+}
+.history-panel.open { transform: translateY(0); }
+.history-handle {
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; border-bottom: 1px solid var(--border);
+}
+.history-handle h3 { font-family: 'Syne', sans-serif; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+.history-list { padding: 10px 20px; overflow-y: auto; max-height: 190px; }
+.history-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+}
+.history-item:last-child { border-bottom: none; }
+.history-time { color: var(--text3); white-space: nowrap; font-size: .75rem; min-width: 60px; }
+.history-emp { color: var(--accent); font-weight: 600; min-width: 80px; }
+.history-loc { color: var(--text2); }
+
+/* ── ZONE SETTINGS ── */
+.zone-panel {
+  position: absolute; right: 16px; bottom: 70px; z-index: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  width: 240px;
+  display: none;
+}
+.zone-panel.show { display: block; }
+.zone-panel h4 { font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.zone-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: .82rem; }
+.toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--border); position: relative; cursor: pointer; transition: background .2s; }
+.toggle.on { background: var(--accent); }
+.toggle::after { content:''; position:absolute; width:14px; height:14px; background:#fff; border-radius:50%; top:3px; left:3px; transition:transform .2s; }
+.toggle.on::after { transform: translateX(16px); }
+
+/* ── MAP CONTROLS ── */
+.map-controls {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%); z-index: 500;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+/* ── CUSTOM MARKERS ── */
+.custom-marker {
+  width: 36px; height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 3px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.4);
+}
+.marker-inner { transform: rotate(45deg); font-size: .75rem; font-weight: 700; color: #fff; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 20px;
+  font-size: .85rem; z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { max-height: 45vh; }
+  #map { min-height: 55vh; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    TrackTeam
+  </div>
+  <div class="header-right">
+    <span style="font-size:.8rem;color:var(--text2)">Dashboard Patron</span>
+    <button class="btn btn-outline btn-sm" onclick="showZonePanel()">⚙ Zones</button>
+    <button class="btn btn-accent btn-sm" onclick="showAddEmployee()">+ Employé</button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="company-setup">
+        <label>Nom de votre entreprise</label>
+        <input type="text" id="companyName" placeholder="ex: Mon Entreprise SARL" oninput="saveCompanyName()">
+        <label>Code entreprise (partagez-le à vos employés)</label>
+        <div class="code-display">
+          <span id="companyCode">—</span>
+          <button class="btn btn-outline btn-sm btn-icon" onclick="copyCode()" title="Copier">📋</button>
+        </div>
+        <button class="btn btn-accent" onclick="generateCode()" style="width:100%">🔄 Générer un code</button>
+      </div>
+    </div>
+
+    <div class="employees-header">
+      <h3>Équipe</h3>
+      <span class="badge" id="empCount">0</span>
+    </div>
+
+    <div class="employees-list" id="employeesList">
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <p>Aucun employé.<br>Ajoutez un employé et partagez-lui son lien de géolocalisation.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAP ── -->
+  <div class="map-container">
+    <div id="map"></div>
+
+    <div class="map-overlay">
+      <div class="stats-bar">
+        <div class="stat"><div class="stat-val green" id="statOnline">0</div><div class="stat-label">En ligne</div></div>
+        <div class="stat"><div class="stat-val red" id="statOffline">0</div><div class="stat-label">Hors ligne</div></div>
+        <div class="stat"><div class="stat-val blue" id="statTotal">0</div><div class="stat-label">Total</div></div>
+      </div>
+    </div>
+
+    <div class="alert-banner" id="alertBanner">
+      <span style="font-size:1.2rem">⚠️</span>
+      <p id="alertText">Un employé a quitté la zone !</p>
+    </div>
+
+    <div class="map-controls">
+      <button class="btn btn-outline btn-sm btn-icon" onclick="fitAllMarkers()" title="Vue globale">🗺</button>
+      <button class="btn btn-outline btn-sm btn-icon" onclick="toggleHistory()" title="Historique">📍</button>
+    </div>
+
+    <!-- Zone panel -->
+    <div class="zone-panel" id="zonePanel">
+      <h4>⚙ Zones d'alerte</h4>
+      <div class="zone-row">
+        <span>Activer les alertes</span>
+        <div class="toggle" id="zoneToggle" onclick="toggleZoneAlert()"></div>
+      </div>
+      <div class="zone-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <span>Rayon (km)</span>
+        <input type="number" id="zoneRadius" value="5" min="0.1" max="100" step="0.1" style="width:100%;margin-top:4px" onchange="updateZoneCircle()">
+      </div>
+      <div style="font-size:.75rem;color:var(--text2);margin-top:8px">Clic sur la carte pour définir le centre de la zone.</div>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px" onclick="showZonePanel()">Fermer</button>
+    </div>
+
+    <!-- History panel -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-handle" onclick="toggleHistory()">
+        <h3>📍 Historique des positions</h3>
+        <span style="color:var(--text3)">▼</span>
+      </div>
+      <div class="history-list" id="historyList">
+        <div style="color:var(--text3);font-size:.82rem;padding:10px 0">Aucun historique pour le moment.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD EMPLOYEE MODAL ── -->
+<div class="modal-overlay" id="addEmpModal">
+  <div class="modal">
+    <h2>➕ Ajouter un employé</h2>
+    <div class="form-group">
+      <label>Nom complet</label>
+      <input type="text" id="empName" placeholder="ex: Jean Dupont">
+    </div>
+    <div class="form-group">
+      <label>Poste / Rôle</label>
+      <input type="text" id="empRole" placeholder="ex: Livreur, Technicien...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Annuler</button>
+      <button class="btn btn-accent" onclick="addEmployee()">Créer & Obtenir le lien</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LINK MODAL ── -->
+<div class="modal-overlay" id="linkModal">
+  <div class="modal">
+    <h2>🔗 Lien employé</h2>
+    <p style="color:var(--text2);font-size:.85rem;margin-bottom:6px">Partagez ce lien à votre employé. Il s'ouvrira sur son téléphone et enverra sa position en temps réel.</p>
+    <div class="link-box" id="linkDisplay"></div>
+    <div class="link-qr" id="qrContainer"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('linkModal')">Fermer</button>
+      <button class="btn btn-accent" onclick="copyLink()">📋 Copier le lien</button>
+      <button class="btn btn-outline" onclick="shareLink()">📤 Partager</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  ÉTAT GLOBAL
+// ══════════════════════════════════════════════
+let employees = {};
+let markers = {};
+let polylines = {};
+let posHistory = [];
+let map;
+let zoneCircle = null;
+let zoneCenter = null;
+let zoneEnabled = false;
+let zoneRadius = 5;
+let currentLinkUrl = '';
+let activeEmpId = null;
+let db, _ref, _set, _onValue, _push, _remove;
+
+// ══════════════════════════════════════════════
+//  INIT MAP
+// ══════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  map.on('click', function(e) {
+    if (zoneEnabled) {
+      zoneCenter = e.latlng;
+      updateZoneCircle();
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+//  FIREBASE INIT
+// ══════════════════════════════════════════════
+window.addEventListener('firebaseReady', () => {
+  db = window._db;
+  _ref = window._ref;
+  _set = window._set;
+  _onValue = window._onValue;
+  _push = window._push;
+  _remove = window._remove;
+
+  loadCompany();
+  listenEmployees();
+});
+
+// Fallback si Firebase n'est pas configuré (démo locale)
+setTimeout(() => {
+  if (!window._firebaseReady) {
+    console.warn('Firebase non configuré — mode démo local');
+    loadLocalDemo();
+  }
+}, 2000);
+
+// ══════════════════════════════════════════════
+//  COMPANY
+// ══════════════════════════════════════════════
+function loadCompany() {
+  const name = localStorage.getItem('tt_company') || '';
+  const code = localStorage.getItem('tt_code') || '';
+  if (name) document.getElementById('companyName').value = name;
+  if (code) document.getElementById('companyCode').textContent = code;
+  else generateCode();
+}
+
+function saveCompanyName() {
+  const name = document.getElementById('companyName').value;
+  localStorage.setItem('tt_company', name);
+}
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('companyCode').textContent = code;
+  localStorage.setItem('tt_code', code);
+  showToast('Nouveau code généré : ' + code);
+}
+
+function copyCode() {
+  const code = document.getElementById('companyCode').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('Code copié !'));
+}
+
+// ══════════════════════════════════════════════
+//  EMPLOYEES
+// ══════════════════════════════════════════════
+function showAddEmployee() {
+  document.getElementById('empName').value = '';
+  document.getElementById('empRole').value = '';
+  document.getElementById('addEmpModal').classList.add('show');
+  setTimeout(() => document.getElementById('empName').focus(), 100);
+}
+
+function addEmployee() {
+  const name = document.getElementById('empName').value.trim();
+  const role = document.getElementById('empRole').value.trim();
+  if (!name) { showToast('Entrez un nom'); return; }
+
+  const id = 'emp_' + Date.now();
+  const code = localStorage.getItem('tt_code') || 'DEMO';
+  const emp = { id, name, role: role || 'Employé', online: false, lat: null, lng: null, lastSeen: null };
+
+  employees[id] = emp;
+
+  if (db) {
+    _set(_ref(db, `companies/${code}/employees/${id}`), emp);
+  } else {
+    saveLocal();
+    renderEmployees();
+  }
+
+  closeModal('addEmpModal');
+  showEmployeeLink(id, name);
+}
+
+function removeEmployee(id) {
+  const code = localStorage.getItem('tt_code') || 'DEMO';
+  if (db) {
+    _remove(_ref(db, `companies/${code}/employees/${id}`));
+  } else {
+    delete employees[id];
+    saveLocal();
+    renderEmployees();
+  }
+  if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+  if (polylines[id]) { map.removeLayer(polylines[id]); delete polylines[id]; }
+  showToast('Employé supprimé');
+}
+
+function listenEmployees() {
+  const code = localStorage.getItem('tt_code') || 'DEMO';
+  _onValue(_ref(db, `companies/${code}/employees`), snap => {
+    employees = snap.val() || {};
+    renderEmployees();
+    updateMarkers();
+    updateStats();
+    checkZoneAlerts();
+  });
+}
+
+function renderEmployees() {
+  const list = document.getElementById('employeesList');
+  const ids = Object.keys(employees);
+  document.getElementById('empCount').textContent = ids.length;
+
+  if (ids.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>Aucun employé.<br>Ajoutez un employé et partagez-lui son lien.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  ids.forEach(id => {
+    const emp = employees[id];
+    const online = emp.online || false;
+    const lastSeen = emp.lastSeen ? timeAgo(emp.lastSeen) : 'jamais';
+    const card = document.createElement('div');
+    card.className = 'employee-card' + (activeEmpId === id ? ' active' : '');
+    card.innerHTML = `
+      <div class="emp-top">
+        <span class="emp-name">${emp.name}</span>
+        <span class="emp-status">
+          <span class="status-dot ${online ? 'online' : 'offline'}"></span>
+          ${online ? 'En ligne' : 'Hors ligne'}
+        </span>
+      </div>
+      <div class="emp-meta">
+        <span>💼 ${emp.role}</span>
+        ${emp.lat ? `<span>📍 ${(+emp.lat).toFixed(4)}, ${(+emp.lng).toFixed(4)}</span>` : '<span>📍 Position inconnue</span>'}
+        <span>⏱ ${lastSeen}</span>
+      </div>
+      <div class="emp-actions">
+        <button class="btn btn-outline btn-sm" onclick="focusEmployee('${id}');event.stopPropagation()">🗺 Localiser</button>
+        <button class="btn btn-outline btn-sm" onclick="showEmployeeLink('${id}','${emp.name}');event.stopPropagation()">🔗 Lien</button>
+        <button class="btn btn-danger btn-sm" onclick="removeEmployee('${id}');event.stopPropagation()">✕</button>
+      </div>
+    `;
+    card.onclick = () => { activeEmpId = id; focusEmployee(id); renderEmployees(); };
+    list.appendChild(card);
+  });
+}
+
+function updateStats() {
+  const all = Object.values(employees);
+  const online = all.filter(e => e.online).length;
+  document.getElementById('statOnline').textContent = online;
+  document.getElementById('statOffline').textContent = all.length - online;
+  document.getElementById('statTotal').textContent = all.length;
+}
+
+// ══════════════════════════════════════════════
+//  MARKERS
+// ══════════════════════════════════════════════
+const COLORS = ['#00e5a0','#0099ff','#ffa502','#ff6b81','#a29bfe','#fd79a8','#fdcb6e','#00cec9'];
+
+function updateMarkers() {
+  const ids = Object.keys(employees);
+  ids.forEach((id, i) => {
+    const emp = employees[id];
+    if (!emp.lat || !emp.lng) return;
+    const color = COLORS[i % COLORS.length];
+    const latlng = [+emp.lat, +emp.lng];
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:34px;height:34px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center">
+              <span style="transform:rotate(45deg);font-size:.7rem;font-weight:700;color:#0a0c10">${emp.name.slice(0,2).toUpperCase()}</span>
+             </div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 34]
+    });
+
+    if (markers[id]) {
+      markers[id].setLatLng(latlng).setIcon(icon);
+    } else {
+      markers[id] = L.marker(latlng, { icon }).addTo(map);
+      markers[id].bindPopup(`<b>${emp.name}</b><br>${emp.role}`);
+    }
+
+    // Trail
+    if (!emp.trail) emp.trail = [];
+    if (emp.trail) {
+      if (polylines[id]) map.removeLayer(polylines[id]);
+      if (emp.trail.length > 1) {
+        polylines[id] = L.polyline(emp.trail.map(p => [p.lat, p.lng]), { color, weight: 2, opacity: .5, dashArray: '4 6' }).addTo(map);
+      }
+    }
+  });
+}
+
+function focusEmployee(id) {
+  const emp = employees[id];
+  if (!emp || !emp.lat) { showToast('Position inconnue pour cet employé'); return; }
+  map.flyTo([+emp.lat, +emp.lng], 14, { duration: 1.2 });
+  if (markers[id]) markers[id].openPopup();
+}
+
+function fitAllMarkers() {
+  const positioned = Object.values(employees).filter(e => e.lat && e.lng);
+  if (!positioned.length) { showToast('Aucune position disponible'); return; }
+  const bounds = L.latLngBounds(positioned.map(e => [+e.lat, +e.lng]));
+  map.fitBounds(bounds, { padding: [60, 60] });
+}
+
+// ══════════════════════════════════════════════
+//  ZONE ALERTS
+// ══════════════════════════════════════════════
+function toggleZoneAlert() {
+  zoneEnabled = !zoneEnabled;
+  document.getElementById('zoneToggle').classList.toggle('on', zoneEnabled);
+  if (!zoneEnabled && zoneCircle) { map.removeLayer(zoneCircle); zoneCircle = null; }
+  showToast(zoneEnabled ? 'Alertes de zone activées. Cliquez sur la carte pour définir le centre.' : 'Alertes de zone désactivées');
+}
+
+function updateZoneCircle() {
+  zoneRadius = parseFloat(document.getElementById('zoneRadius').value) || 5;
+  if (!zoneCenter || !zoneEnabled) return;
+  if (zoneCircle) map.removeLayer(zoneCircle);
+  zoneCircle = L.circle(zoneCenter, { radius: zoneRadius * 1000, color: '#ffa502', fillColor: '#ffa502', fillOpacity: .07, weight: 2, dashArray: '6 4' }).addTo(map);
+}
+
+function checkZoneAlerts() {
+  if (!zoneEnabled || !zoneCenter) return;
+  Object.values(employees).forEach(emp => {
+    if (!emp.lat || !emp.online) return;
+    const dist = map.distance(zoneCenter, [+emp.lat, +emp.lng]) / 1000;
+    if (dist > zoneRadius) {
+      const banner = document.getElementById('alertBanner');
+      document.getElementById('alertText').textContent = `⚠ ${emp.name} est hors zone (${dist.toFixed(1)} km)`;
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 5000);
+    }
+  });
+}
+
+function showZonePanel() {
+  document.getElementById('zonePanel').classList.toggle('show');
+}
+
+// ══════════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════════
+function toggleHistory() {
+  document.getElementById('historyPanel').classList.toggle('open');
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!posHistory.length) {
+    list.innerHTML = `<div style="color:var(--text3);font-size:.82rem;padding:10px 0">Aucun historique pour le moment.</div>`;
+    return;
+  }
+  list.innerHTML = posHistory.slice(-30).reverse().map(h => `
+    <div class="history-item">
+      <span class="history-time">${formatTime(h.ts)}</span>
+      <span class="history-emp">${h.name}</span>
+      <span class="history-loc">📍 ${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════
+//  EMPLOYEE LINK
+// ══════════════════════════════════════════════
+function showEmployeeLink(id, name) {
+  const code = localStorage.getItem('tt_code') || 'DEMO';
+  const base = window.location.href.replace('index.html','').replace(/\/$/, '');
+  const url = `${base}/tracker.html?company=${code}&emp=${id}&name=${encodeURIComponent(name)}`;
+  currentLinkUrl = url;
+  document.getElementById('linkDisplay').textContent = url;
+
+  // QR code via API gratuite
+  const qr = document.getElementById('qrContainer');
+  qr.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}&bgcolor=111318&color=00e5a0" alt="QR Code" style="width:160px;height:160px">`;
+
+  document.getElementById('linkModal').classList.add('show');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(currentLinkUrl).then(() => showToast('Lien copié !'));
+}
+
+function shareLink() {
+  if (navigator.share) {
+    navigator.share({ title: 'TrackTeam — Position en direct', url: currentLinkUrl });
+  } else {
+    copyLink();
+  }
+}
+
+// ══════════════════════════════════════════════
+//  LOCAL DEMO (sans Firebase)
+// ══════════════════════════════════════════════
+function loadLocalDemo() {
+  const saved = localStorage.getItem('tt_employees');
+  employees = saved ? JSON.parse(saved) : {};
+  const code = localStorage.getItem('tt_code');
+  if (!code) generateCode();
+  renderEmployees();
+  updateStats();
+  showToast('Mode local (Firebase non configuré)');
+}
+
+function saveLocal() {
+  localStorage.setItem('tt_employees', JSON.stringify(employees));
+  updateStats();
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'à l\'instant';
+  if (d < 3600000) return Math.floor(d/60000) + ' min';
+  if (d < 86400000) return Math.floor(d/3600000) + ' h';
+  return Math.floor(d/86400000) + ' j';
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
+});
+
+// Enter key on inputs
+document.getElementById('empName').addEventListener('keydown', e => { if (e.key === 'Enter') addEmployee(); });
+
+// ── INIT ──
+initMap();
+loadCompany();
+</script>
+</body>
+</html>
