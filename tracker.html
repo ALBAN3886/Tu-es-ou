@@ -75,9 +75,7 @@ body {
 }
 .card::before {
   content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
 }
 
@@ -94,145 +92,116 @@ body {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 1.6rem; font-weight: 800;
-  color: #0a0c10;
+  font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: #0a0c10;
   margin: 0 auto 16px;
   box-shadow: 0 0 30px rgba(0,229,160,.3);
 }
 
-h1 {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.4rem; font-weight: 800;
-  margin-bottom: 4px;
-}
+h1 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
 .subtitle { color: var(--text2); font-size: .88rem; margin-bottom: 28px; }
 
-/* STATUS */
 .status-ring {
-  width: 100px; height: 100px;
-  border-radius: 50%;
+  width: 100px; height: 100px; border-radius: 50%;
   border: 3px solid var(--border);
   margin: 0 auto 20px;
   display: flex; align-items: center; justify-content: center;
-  position: relative;
-  transition: border-color .3s;
+  position: relative; transition: border-color .3s;
 }
-.status-ring.active { border-color: var(--accent); box-shadow: 0 0 30px rgba(0,229,160,.2); }
+.status-ring.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px rgba(0,229,160,.2);
+}
 .status-ring.active::after {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  opacity: .3;
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid var(--accent); opacity: .3;
   animation: ripple 2s infinite;
 }
 @keyframes ripple { 0%{transform:scale(1);opacity:.3} 100%{transform:scale(1.3);opacity:0} }
 
 .status-icon { font-size: 2.2rem; }
-
-.status-text {
-  font-family: 'Syne', sans-serif;
-  font-size: 1rem; font-weight: 700;
-  margin-bottom: 6px;
-}
+.status-text { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
 .status-text.green { color: var(--accent); }
 .status-text.red { color: var(--danger); }
 .status-text.orange { color: var(--warn); }
 
 .coords {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin: 16px 0;
-  font-size: .82rem;
-  color: var(--text2);
-  text-align: left;
-  display: none;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px; margin: 16px 0;
+  font-size: .82rem; color: var(--text2); text-align: left; display: none;
 }
 .coords.show { display: block; }
 .coord-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .coord-row:last-child { margin-bottom: 0; }
-.coord-label { color: var(--text2); }
 .coord-val { color: var(--text); font-weight: 500; }
 
-/* BUTTONS */
-.btn-main {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 1rem; font-weight: 600;
-  cursor: pointer;
-  transition: all .2s;
-  margin-bottom: 10px;
+/* Bannière arrière-plan */
+.bg-banner {
+  background: rgba(0,229,160,.08);
+  border: 1px solid rgba(0,229,160,.3);
+  border-radius: 10px; padding: 10px 14px; margin: 10px 0;
+  font-size: .8rem; color: var(--accent);
+  text-align: left; display: none; line-height: 1.6;
 }
-.btn-start {
-  background: var(--accent);
-  color: #0a0c10;
-}
-.btn-start:hover { background: #00c988; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,160,.3); }
-.btn-start:active { transform: translateY(0); }
+.bg-banner.show { display: block; }
+.bg-banner strong { color: var(--accent); }
 
-.btn-stop {
-  background: var(--danger);
-  color: #fff;
-  display: none;
+.btn-main {
+  width: 100%; padding: 14px; border-radius: 12px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
+  cursor: pointer; transition: all .2s; margin-bottom: 10px;
 }
+.btn-start { background: var(--accent); color: #0a0c10; }
+.btn-start:hover { background: #00c988; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,160,.3); }
+.btn-stop { background: var(--danger); color: #fff; display: none; }
 .btn-stop:hover { background: #e03545; }
 
 .info-box {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: .8rem;
-  color: var(--text2);
-  text-align: left;
-  margin-top: 10px;
-  line-height: 1.6;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: .8rem; color: var(--text2); text-align: left; margin-top: 10px; line-height: 1.6;
 }
 .info-box strong { color: var(--text); }
 
-.update-counter {
-  font-size: .75rem;
-  color: var(--text2);
-  margin-top: 8px;
-}
+.update-counter { font-size: .75rem; color: var(--text2); margin-top: 8px; }
 .update-counter span { color: var(--accent); font-weight: 600; }
 
 .error-msg {
-  background: rgba(255,71,87,.1);
-  border: 1px solid var(--danger);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: .82rem;
-  color: var(--danger);
-  margin: 10px 0;
-  display: none;
-  text-align: left;
+  background: rgba(255,71,87,.1); border: 1px solid var(--danger);
+  border-radius: 8px; padding: 10px 14px; font-size: .82rem; color: var(--danger);
+  margin: 10px 0; display: none; text-align: left;
 }
 .error-msg.show { display: block; }
 
-/* Permission screen */
+/* PIN screen */
+.pin-screen {
+  display: none; flex-direction: column; align-items: center; gap: 16px;
+}
+.pin-screen.show { display: flex; }
+.pin-display { display: flex; gap: 8px; justify-content: center; }
+.pin-digit {
+  width: 42px; height: 52px; background: var(--surface2);
+  border: 2px solid var(--border); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent);
+}
+.pin-digit.filled { border-color: var(--accent); }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 220px; }
+.pin-key {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700;
+  padding: 16px; border-radius: 12px; cursor: pointer; transition: all .15s; text-align: center;
+}
+.pin-key:hover { border-color: var(--accent); color: var(--accent); }
+.pin-key.del { font-size: .9rem; color: var(--danger); }
+.pin-error { color: var(--danger); font-size: .85rem; animation: none; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
 .perm-screen { display: none; }
 .perm-screen.show { display: block; }
-.main-screen.hide { display: none; }
-
-.permission-steps {
-  text-align: left;
-  margin: 16px 0;
-}
-.step {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 8px 0; font-size: .85rem; color: var(--text2);
-}
+.permission-steps { text-align: left; margin: 16px 0; }
+.step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: .85rem; color: var(--text2); }
 .step-num {
-  width: 22px; height: 22px; min-width: 22px;
-  background: var(--accent); color: #0a0c10;
+  width: 22px; height: 22px; min-width: 22px; background: var(--accent); color: #0a0c10;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: .72rem; font-weight: 700;
 }
@@ -243,7 +212,43 @@ h1 {
 <div class="card">
   <div class="logo"><div class="logo-dot"></div>TrackTeam</div>
 
-  <div class="main-screen" id="mainScreen">
+  <!-- Écran PIN -->
+  <div class="pin-screen" id="pinScreen">
+    <div style="font-size:2rem">🔒</div>
+    <h1 style="font-size:1.2rem">Lien sécurisé</h1>
+    <p style="color:var(--text2);font-size:.85rem">Entrez le code PIN pour accéder au partage</p>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-digit" id="pd0">—</div>
+      <div class="pin-digit" id="pd1">—</div>
+      <div class="pin-digit" id="pd2">—</div>
+      <div class="pin-digit" id="pd3">—</div>
+    </div>
+    <div class="pin-error" id="pinError" style="opacity:0">Code incorrect</div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+      <button class="pin-key" onclick="pinInput('0')">0</button>
+      <button class="pin-key" onclick="pinClear()" style="font-size:.75rem;color:var(--text2)">C</button>
+    </div>
+  </div>
+
+  <!-- Écran expiré -->
+  <div id="expiredScreen" style="display:none;text-align:center;padding:20px 0">
+    <div style="font-size:3rem;margin-bottom:16px">⏱</div>
+    <h1 style="font-size:1.2rem;margin-bottom:8px;color:var(--danger)">Lien expiré</h1>
+    <p style="color:var(--text2);font-size:.85rem">Ce lien de partage n'est plus valide.<br>Demandez un nouveau lien à votre patron.</p>
+  </div>
+
+  <!-- Écran principal -->
+  <div class="main-screen" id="mainScreen" style="display:none">
     <div class="avatar" id="avatarEl">??</div>
     <h1 id="empNameEl">Chargement...</h1>
     <p class="subtitle" id="companyEl">Entreprise</p>
@@ -260,6 +265,13 @@ h1 {
       <div class="coord-row"><span class="coord-label">Précision</span><span class="coord-val" id="coordAcc">—</span></div>
     </div>
 
+    <!-- Bannière arrière-plan actif -->
+    <div class="bg-banner" id="bgBanner">
+      🟢 <strong>Partage actif en arrière-plan</strong><br>
+      Ne fermez pas complètement le navigateur.<br>
+      Vous pouvez minimiser la fenêtre ou changer d'app.
+    </div>
+
     <div class="error-msg" id="errorMsg"></div>
 
     <button class="btn-main btn-start" id="btnStart" onclick="startTracking()">
@@ -274,23 +286,21 @@ h1 {
     </div>
 
     <div class="info-box">
-      <strong>Comment ça marche ?</strong><br>
-      Appuyez sur <em>Démarrer</em> pour envoyer votre position à votre patron en temps réel.<br>
-      Votre position est mise à jour toutes les <strong>10 secondes</strong>.<br>
-      Vous pouvez arrêter à tout moment.
+      <strong>Arrière-plan activé</strong><br>
+      Une fois démarré, vous pouvez minimiser le navigateur — le partage continue.<br>
+      <strong>Ne fermez pas complètement</strong> le navigateur pour maintenir le partage.
     </div>
   </div>
 
-  <!-- Écran d'erreur permission -->
+  <!-- Écran permission refusée -->
   <div class="perm-screen" id="permScreen">
     <div style="font-size:3rem;margin-bottom:16px">🔒</div>
-    <h1 style="font-size:1.2rem;margin-bottom:8px">Accès à la position refusé</h1>
-    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Pour partager votre position, autorisez la géolocalisation dans votre navigateur :</p>
+    <h1 style="font-size:1.2rem;margin-bottom:8px">Accès refusé</h1>
+    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Autorisez la géolocalisation :</p>
     <div class="permission-steps">
-      <div class="step"><div class="step-num">1</div><span>Appuyez sur l'icône 🔒 ou ⓘ dans la barre d'adresse</span></div>
-      <div class="step"><div class="step-num">2</div><span>Allez dans <strong>Autorisations</strong> → <strong>Position</strong></span></div>
-      <div class="step"><div class="step-num">3</div><span>Sélectionnez <strong>Autoriser</strong></span></div>
-      <div class="step"><div class="step-num">4</div><span>Rechargez la page et réessayez</span></div>
+      <div class="step"><div class="step-num">1</div><span>Appuyez sur l'icône 🔒 dans la barre d'adresse</span></div>
+      <div class="step"><div class="step-num">2</div><span><strong>Autorisations</strong> → <strong>Position</strong> → <strong>Autoriser</strong></span></div>
+      <div class="step"><div class="step-num">3</div><span>Rechargez la page</span></div>
     </div>
     <button class="btn-main btn-start" onclick="location.reload()">🔄 Réessayer</button>
   </div>
@@ -302,32 +312,200 @@ h1 {
 // ══════════════════════════════════════════════
 const params = new URLSearchParams(window.location.search);
 const companyCode = params.get('company') || 'DEMO';
-const empId = params.get('emp') || 'emp_test';
-const empName = decodeURIComponent(params.get('name') || 'Employé');
+const empId       = params.get('emp')     || 'emp_test';
+const empName     = decodeURIComponent(params.get('name') || 'Employé');
+const requiredPin = params.get('pin')     || null;
+const expiresAt   = parseInt(params.get('expires') || '0');
 
 let watchId = null;
 let updateCount = 0;
 let db, _ref, _update, _onDisconnect, _set;
 let tracking = false;
 let trailPoints = [];
+let wakeLock = null;
+let bgInterval = null;
+let pinBuffer = '';
 
 // ══════════════════════════════════════════════
-//  INIT UI
+//  VÉRIFICATION EXPIRATION & PIN
 // ══════════════════════════════════════════════
-document.getElementById('empNameEl').textContent = empName;
-document.getElementById('companyEl').textContent = 'Code : ' + companyCode;
-const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-document.getElementById('avatarEl').textContent = initials || '??';
+function initScreen() {
+  // Vérifier expiration
+  if (expiresAt > 0 && Date.now() > expiresAt) {
+    document.getElementById('expiredScreen').style.display = 'block';
+    return;
+  }
+
+  // Vérifier PIN
+  if (requiredPin) {
+    document.getElementById('pinScreen').classList.add('show');
+    return;
+  }
+
+  showMainScreen();
+}
+
+function showMainScreen() {
+  document.getElementById('mainScreen').style.display = 'block';
+  document.getElementById('empNameEl').textContent = empName;
+  document.getElementById('companyEl').textContent = 'Code : ' + companyCode;
+  const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  document.getElementById('avatarEl').textContent = initials || '??';
+}
+
+// ══════════════════════════════════════════════
+//  PIN
+// ══════════════════════════════════════════════
+function pinInput(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDisplay();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function pinDelete() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay(); }
+function pinClear()  { pinBuffer = ''; updatePinDisplay(); }
+
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('pd' + i);
+    if (i < pinBuffer.length) { el.textContent = '●'; el.classList.add('filled'); }
+    else { el.textContent = '—'; el.classList.remove('filled'); }
+  }
+}
+
+function verifyPin() {
+  if (pinBuffer === requiredPin) {
+    document.getElementById('pinScreen').classList.remove('show');
+    showMainScreen();
+  } else {
+    const errEl = document.getElementById('pinError');
+    errEl.style.opacity = '1';
+    errEl.style.animation = 'shake .3s';
+    setTimeout(() => { errEl.style.opacity = '0'; errEl.style.animation = 'none'; }, 1500);
+    pinBuffer = ''; updatePinDisplay();
+  }
+}
 
 // ══════════════════════════════════════════════
 //  FIREBASE
 // ══════════════════════════════════════════════
 window.addEventListener('firebaseReady', () => {
-  db = window._db;
-  _ref = window._ref;
-  _update = window._update;
-  _onDisconnect = window._onDisconnect;
-  _set = window._set;
+  db = window._db; _ref = window._ref;
+  _update = window._update; _onDisconnect = window._onDisconnect; _set = window._set;
+});
+
+// ══════════════════════════════════════════════
+//  SERVICE WORKER — arrière-plan
+// ══════════════════════════════════════════════
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // Inline service worker via blob URL
+  const swCode = `
+    const CACHE = 'trackteam-v1';
+    self.addEventListener('install', e => { self.skipWaiting(); });
+    self.addEventListener('activate', e => { clients.claim(); });
+
+    // Garder le SW actif avec un ping périodique
+    self.addEventListener('message', e => {
+      if (e.data === 'ping') {
+        // SW actif — répond pour confirmer
+        e.source && e.source.postMessage('pong');
+      }
+    });
+
+    // Notification persistante de partage actif
+    self.addEventListener('message', e => {
+      if (e.data && e.data.type === 'SHOW_NOTIF') {
+        self.registration.showNotification('TrackTeam — Partage actif', {
+          body: e.data.text || 'Votre position est partagée en direct',
+          icon: 'https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=trackteam',
+          tag: 'trackteam-bg',
+          renotify: false,
+          requireInteraction: true,
+          silent: true,
+          actions: [{ action: 'stop', title: 'Arrêter' }]
+        });
+      }
+      if (e.data && e.data.type === 'HIDE_NOTIF') {
+        self.registration.getNotifications({ tag: 'trackteam-bg' })
+          .then(notifs => notifs.forEach(n => n.close()));
+      }
+    });
+
+    self.addEventListener('notificationclick', e => {
+      if (e.action === 'stop') {
+        e.notification.close();
+        clients.matchAll().then(cls => cls.forEach(c => c.postMessage('STOP_TRACKING')));
+      } else {
+        e.notification.close();
+        clients.openWindow(self.location.origin);
+      }
+    });
+
+    // Fetch cache-first pour les assets
+    self.addEventListener('fetch', e => {
+      e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    });
+  `;
+
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swUrl, { scope: '/' })
+    .then(reg => {
+      window._swReg = reg;
+      console.log('SW enregistré');
+    })
+    .catch(err => {
+      // Fallback : essayer SW depuis fichier si blob échoue (GitHub Pages)
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+
+  // Écouter les messages du SW
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data === 'STOP_TRACKING') stopTracking();
+  });
+}
+
+function sendSwNotif(text) {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({ type: 'SHOW_NOTIF', text });
+  });
+}
+
+function hideSwNotif() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({ type: 'HIDE_NOTIF' });
+  });
+}
+
+// ══════════════════════════════════════════════
+//  WAKE LOCK
+// ══════════════════════════════════════════════
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      // Réacquérir si toujours en tracking (page redevenue visible)
+      if (tracking) setTimeout(acquireWakeLock, 1000);
+    });
+  } catch (e) { console.warn('WakeLock échoué:', e); }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+// Réacquérir wake lock quand la page redevient visible
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && tracking) {
+    acquireWakeLock();
+  }
 });
 
 // ══════════════════════════════════════════════
@@ -335,8 +513,13 @@ window.addEventListener('firebaseReady', () => {
 // ══════════════════════════════════════════════
 function startTracking() {
   if (!navigator.geolocation) {
-    showError('La géolocalisation n\'est pas supportée par votre navigateur.');
+    showError('La géolocalisation n\'est pas supportée.');
     return;
+  }
+
+  // Demander permission notification
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
   }
 
   setStatus('requesting');
@@ -347,21 +530,47 @@ function startTracking() {
       document.getElementById('btnStart').style.display = 'none';
       document.getElementById('btnStop').style.display = 'block';
       document.getElementById('updateCounter').style.display = 'block';
+      document.getElementById('bgBanner').classList.add('show');
       tracking = true;
+
+      // Wake Lock — garder écran/CPU actif
+      acquireWakeLock();
+
+      // Notification persistante arrière-plan
+      sendSwNotif(`${empName} — Position partagée en direct`);
+
       sendPosition(pos);
 
-      // Mise à jour toutes les 10 secondes
+      // watchPosition — déclenché par le GPS natif
       watchId = navigator.geolocation.watchPosition(
         sendPosition,
         handleGeoError,
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
       );
 
-      // Marquer hors ligne si fermeture
+      // Interval de secours toutes les 15s si watchPosition silencieux
+      bgInterval = setInterval(() => {
+        if (!tracking) return;
+        navigator.geolocation.getCurrentPosition(
+          sendPosition,
+          () => {},
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        );
+      }, 15000);
+
+      // Marquer hors ligne si fermeture navigateur
       if (db) {
         const empRef = _ref(db, `companies/${companyCode}/employees/${empId}`);
         _onDisconnect(empRef).update({ online: false });
       }
+
+      // Ping SW toutes les 30s pour le garder actif
+      setInterval(() => {
+        if (!tracking) return;
+        navigator.serviceWorker.ready.then(reg => {
+          if (reg.active) reg.active.postMessage('ping');
+        }).catch(() => {});
+      }, 30000);
     },
     handleGeoError,
     { enableHighAccuracy: true, timeout: 15000 }
@@ -369,9 +578,15 @@ function startTracking() {
 }
 
 function stopTracking() {
-  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  if (bgInterval) { clearInterval(bgInterval); bgInterval = null; }
   tracking = false;
+
+  releaseWakeLock();
+  hideSwNotif();
+
   setStatus('stopped');
+  document.getElementById('bgBanner').classList.remove('show');
 
   if (db) {
     _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
@@ -385,12 +600,11 @@ function sendPosition(pos) {
   const lat = pos.coords.latitude;
   const lng = pos.coords.longitude;
   const acc = Math.round(pos.coords.accuracy);
-  const ts = Date.now();
+  const ts  = Date.now();
 
   trailPoints.push({ lat, lng, ts });
-  if (trailPoints.length > 50) trailPoints.shift(); // garder max 50 points
+  if (trailPoints.length > 50) trailPoints.shift();
 
-  // UI
   document.getElementById('coordsBox').classList.add('show');
   document.getElementById('coordLat').textContent = lat.toFixed(6);
   document.getElementById('coordLng').textContent = lng.toFixed(6);
@@ -398,14 +612,13 @@ function sendPosition(pos) {
   updateCount++;
   document.getElementById('updateCount').textContent = updateCount;
 
-  // Firebase
+  // Mettre à jour la notification avec les coords
+  sendSwNotif(`${empName} — 📍 ${lat.toFixed(4)}, ${lng.toFixed(4)} (±${acc}m)`);
+
   if (db) {
     _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
-      lat, lng, online: true, lastSeen: ts,
-      accuracy: acc, trail: trailPoints
+      lat, lng, online: true, lastSeen: ts, accuracy: acc, trail: trailPoints
     });
-  } else {
-    console.log('Position (mode local):', lat, lng);
   }
 }
 
@@ -414,64 +627,51 @@ function handleGeoError(err) {
     document.getElementById('mainScreen').style.display = 'none';
     document.getElementById('permScreen').classList.add('show');
   } else if (err.code === err.POSITION_UNAVAILABLE) {
-    showError('Position indisponible. Activez le GPS sur votre téléphone.');
+    showError('Position indisponible. Activez le GPS.');
     setStatus('error');
   } else if (err.code === err.TIMEOUT) {
-    showError('Délai dépassé. Vérifiez votre connexion internet et GPS.');
-    setStatus('error');
+    // Timeout = réessayer silencieusement
+    if (tracking) {
+      navigator.geolocation.getCurrentPosition(sendPosition, () => {}, { enableHighAccuracy: false, timeout: 20000 });
+    }
   }
 }
 
 // ══════════════════════════════════════════════
-//  UI STATES
+//  UI
 // ══════════════════════════════════════════════
 function setStatus(state) {
   const ring = document.getElementById('statusRing');
   const icon = document.getElementById('statusIcon');
   const text = document.getElementById('statusText');
-
   ring.className = 'status-ring';
   text.className = 'status-text';
 
-  switch(state) {
-    case 'requesting':
-      icon.textContent = '⏳';
-      text.textContent = 'Obtention de la position...';
-      text.classList.add('orange');
-      break;
-    case 'active':
-      ring.classList.add('active');
-      icon.textContent = '✅';
-      text.textContent = 'Position partagée en direct';
-      text.classList.add('green');
-      break;
-    case 'stopped':
-      icon.textContent = '⏹';
-      text.textContent = 'Partage arrêté';
-      text.classList.add('red');
-      break;
-    case 'error':
-      icon.textContent = '❌';
-      text.textContent = 'Erreur de géolocalisation';
-      text.classList.add('red');
-      break;
-    default:
-      icon.textContent = '📍';
-      text.textContent = 'Prêt à partager';
-  }
+  const states = {
+    requesting: ['⏳', 'Obtention de la position...', 'orange'],
+    active:     ['✅', 'Position partagée en direct', 'green', true],
+    stopped:    ['⏹', 'Partage arrêté', 'red'],
+    error:      ['❌', 'Erreur GPS', 'red'],
+    default:    ['📍', 'Prêt à partager', '']
+  };
+  const [ic, tx, cl, active] = states[state] || states.default;
+  icon.textContent = ic;
+  text.textContent = tx;
+  if (cl) text.classList.add(cl);
+  if (active) ring.classList.add('active');
 }
 
 function showError(msg) {
   const el = document.getElementById('errorMsg');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 6000);
 }
 
-// Garder l'écran allumé si supporté
-if ('wakeLock' in navigator) {
-  navigator.wakeLock.request('screen').catch(() => {});
-}
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+registerServiceWorker();
+initScreen();
 </script>
 </body>
 </html>

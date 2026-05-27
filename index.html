@@ -7,13 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Routing Machine -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, push, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// ─── CONFIGURATION FIREBASE ───────────────────────────────────────────────
-// Remplace par ta config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
   authDomain: "mapaet-fc2bb.firebaseapp.com",
@@ -69,7 +70,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
+  padding: 14px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 1000;
@@ -78,16 +79,16 @@ header {
 .logo {
   display: flex; align-items: center; gap: 10px;
   font-family: 'Syne', sans-serif;
-  font-size: 1.35rem; font-weight: 800;
+  font-size: 1.25rem; font-weight: 800;
   letter-spacing: -0.5px;
 }
 .logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)} 50%{box-shadow:0 0 0 8px rgba(0,229,160,0)} }
 
-.header-right { display: flex; align-items: center; gap: 12px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
 
 /* ── LAYOUT ── */
-.app { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 61px); }
+.app { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 57px); }
 
 /* ── SIDEBAR ── */
 .sidebar {
@@ -98,60 +99,46 @@ header {
 }
 
 .sidebar-top {
-  padding: 20px;
+  padding: 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.company-setup { display: flex; flex-direction: column; gap: 10px; }
-.company-setup label { font-size: .75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+.company-setup { display: flex; flex-direction: column; gap: 8px; }
+.company-setup label { font-size: .75rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
 
-input[type="text"], input[type="number"] {
-  width: 100%;
+input[type=text], input[type=number], input[type=password] {
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-family: inherit;
   font-size: .9rem;
+  width: 100%;
   outline: none;
   transition: border-color .2s;
 }
 input:focus { border-color: var(--accent); }
 
-.code-display {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.code-display span { font-family: 'Syne', monospace; font-size: 1.1rem; font-weight: 700; color: var(--accent); letter-spacing: 3px; }
-
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
-  transition: all .15s; text-decoration: none;
-}
-.btn-accent { background: var(--accent); color: #0a0c10; }
-.btn-accent:hover { background: #00c988; transform: translateY(-1px); }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
-.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-danger:hover { background: #e03545; }
-.btn-sm { padding: 6px 11px; font-size: .8rem; }
-.btn-icon { padding: 7px; border-radius: 7px; }
-
-/* ── EMPLOYEE LIST ── */
 .employees-header {
-  padding: 16px 20px 10px;
   display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 8px;
+  flex-shrink: 0;
 }
-.employees-header h3 { font-family: 'Syne', sans-serif; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); }
-.badge { background: var(--accent); color: #0a0c10; border-radius: 20px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.employees-header h3 { font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 700; }
 
-.employees-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+.badge {
+  background: var(--accent); color: #0a0c10;
+  font-size: .75rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+}
+
+.employees-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+}
 .employees-list::-webkit-scrollbar { width: 4px; }
 .employees-list::-webkit-scrollbar-track { background: transparent; }
 .employees-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -160,191 +147,221 @@ input:focus { border-color: var(--accent); }
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 12px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: all .15s;
-  position: relative;
+  transition: border-color .2s, background .2s;
 }
-.employee-card:hover, .employee-card.active { border-color: var(--accent); background: rgba(0,229,160,.05); }
-.employee-card.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--accent); border-radius:0 2px 2px 0; }
+.employee-card:hover { border-color: var(--accent); }
+.employee-card.active { border-color: var(--accent); background: rgba(0,229,160,.05); }
 
-.emp-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.emp-name { font-weight: 600; font-size: .92rem; }
-.emp-status { display: flex; align-items: center; gap: 5px; font-size: .75rem; }
+.emp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.emp-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .95rem; }
+.emp-status { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--text2); }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; }
 .status-dot.online { background: var(--online); box-shadow: 0 0 6px var(--online); }
 .status-dot.offline { background: var(--offline); }
 
-.emp-meta { color: var(--text2); font-size: .78rem; display: flex; gap: 10px; flex-wrap: wrap; }
-.emp-actions { display: flex; gap: 6px; margin-top: 8px; }
+.emp-meta { display: flex; flex-direction: column; gap: 2px; font-size: .78rem; color: var(--text2); margin-bottom: 8px; }
 
-.empty-state {
-  text-align: center; padding: 40px 20px; color: var(--text3);
-}
-.empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
-.empty-state p { font-size: .85rem; line-height: 1.6; }
+.emp-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
-/* ── ADD EMPLOYEE MODAL ── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
-  z-index: 2000; align-items: center; justify-content: center;
-}
-.modal-overlay.show { display: flex; }
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px;
-  width: 400px; max-width: 90vw;
-  animation: slideUp .2s ease;
-}
-@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
-.modal h2 { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.form-group label { font-size: .8rem; color: var(--text2); font-weight: 500; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.empty-state { text-align: center; padding: 30px 20px; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 10px; opacity: .4; }
+.empty-state p { color: var(--text3); font-size: .82rem; line-height: 1.5; }
 
-/* ── LINK MODAL ── */
-.link-box {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  font-size: .82rem;
-  color: var(--accent2);
-  word-break: break-all;
-  margin: 14px 0;
-  font-family: monospace;
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 16px; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: .85rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all .15s;
 }
-.link-qr { text-align: center; margin: 10px 0; }
-.link-qr img { border-radius: 8px; border: 2px solid var(--border); }
+.btn-accent { background: var(--accent); color: #0a0c10; }
+.btn-accent:hover { background: #00c988; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-nav { background: #0099ff; color: #fff; }
+.btn-nav:hover { background: #007acc; }
+.btn-sm { padding: 5px 10px; font-size: .78rem; border-radius: 6px; }
+.btn-icon { padding: 7px; min-width: 32px; }
 
 /* ── MAP ── */
 .map-container { position: relative; flex: 1; }
-#map { width: 100%; height: 100%; min-height: calc(100vh - 61px); }
-
-/* Leaflet dark theme fix */
-/* Marqueur pulsant */
-@keyframes markerPulse {
-  0% { transform: scale(1); opacity: .5; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
+#map { width: 100%; height: 100%; min-height: calc(100vh - 57px); }
 
 /* Popup style */
 .leaflet-popup-content-wrapper { background: #111318; border: 1px solid #1e2330; color: #e8ecf0; border-radius: 10px; }
 .leaflet-popup-tip { background: #111318; }
 .leaflet-popup-content { font-family: 'DM Sans', sans-serif; font-size: .88rem; }
 
+/* Marqueur pulsant */
+@keyframes markerPulse {
+  0% { transform: scale(1); opacity: .5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
 .map-overlay {
-  position: absolute; top: 16px; left: 16px; z-index: 500;
-  display: flex; flex-direction: column; gap: 8px;
+  position: absolute; top: 12px; left: 12px; z-index: 500;
 }
 
 .stats-bar {
-  background: var(--surface);
+  background: rgba(17,19,24,.9);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 16px;
-  display: flex; gap: 20px;
+  display: flex; gap: 0;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
 }
-.stat { text-align: center; }
-.stat-val { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; }
-.stat-val.green { color: var(--accent); }
-.stat-val.red { color: var(--danger); }
+.stat { padding: 8px 14px; text-align: center; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; }
+.stat-val.green { color: var(--online); }
+.stat-val.red { color: var(--offline); }
 .stat-val.blue { color: var(--accent2); }
-.stat-label { font-size: .7rem; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+.stat-label { font-size: .65rem; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; }
 
-/* Zone alert banner */
 .alert-banner {
-  position: absolute; top: 16px; right: 16px; z-index: 500;
-  background: var(--danger);
-  border-radius: 10px;
-  padding: 12px 18px;
-  display: none; align-items: center; gap: 10px;
-  animation: shake .4s ease;
-  max-width: 280px;
+  position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(255,71,87,.15); border: 1px solid var(--danger);
+  color: var(--text); padding: 10px 18px; border-radius: 10px;
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0; transition: all .3s; pointer-events: none; z-index: 600;
+  backdrop-filter: blur(8px); white-space: nowrap;
 }
-.alert-banner.show { display: flex; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-.alert-banner p { font-size: .85rem; font-weight: 500; }
+.alert-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── HISTORY PANEL ── */
-.history-panel {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 400;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  transition: transform .3s ease;
-  transform: translateY(100%);
-  max-height: 260px;
-}
-.history-panel.open { transform: translateY(0); }
-.history-handle {
-  padding: 12px 20px;
-  display: flex; align-items: center; justify-content: space-between;
-  cursor: pointer; border-bottom: 1px solid var(--border);
-}
-.history-handle h3 { font-family: 'Syne', sans-serif; font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
-.history-list { padding: 10px 20px; overflow-y: auto; max-height: 190px; }
-.history-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 8px 0; border-bottom: 1px solid var(--border);
-  font-size: .82rem;
-}
-.history-item:last-child { border-bottom: none; }
-.history-time { color: var(--text3); white-space: nowrap; font-size: .75rem; min-width: 60px; }
-.history-emp { color: var(--accent); font-weight: 600; min-width: 80px; }
-.history-loc { color: var(--text2); }
-
-/* ── ZONE SETTINGS ── */
-.zone-panel {
-  position: absolute; right: 16px; bottom: 70px; z-index: 500;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  width: 240px;
-  display: none;
-}
-.zone-panel.show { display: block; }
-.zone-panel h4 { font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-.zone-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: .82rem; }
-.toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--border); position: relative; cursor: pointer; transition: background .2s; }
-.toggle.on { background: var(--accent); }
-.toggle::after { content:''; position:absolute; width:14px; height:14px; background:#fff; border-radius:50%; top:3px; left:3px; transition:transform .2s; }
-.toggle.on::after { transform: translateX(16px); }
-
-/* ── MAP CONTROLS ── */
 .map-controls {
-  position: absolute; right: 16px; top: 50%; transform: translateY(-50%); z-index: 500;
+  position: absolute; top: 12px; right: 60px; z-index: 500;
   display: flex; flex-direction: column; gap: 6px;
 }
 
-/* ── CUSTOM MARKERS ── */
-.custom-marker {
-  width: 36px; height: 36px;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  border: 3px solid #fff;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,.4);
+/* Zone panel */
+.zone-panel {
+  position: absolute; top: 60px; right: 10px; z-index: 600;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; width: 220px;
+  display: none; flex-direction: column; gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
-.marker-inner { transform: rotate(45deg); font-size: .75rem; font-weight: 700; color: #fff; }
+.zone-panel.show { display: flex; }
+.zone-panel h4 { font-family: 'Syne', sans-serif; font-size: .9rem; font-weight: 700; }
+.zone-row { display: flex; align-items: center; justify-content: space-between; }
 
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+.toggle {
+  width: 38px; height: 22px; background: var(--border);
+  border-radius: 11px; cursor: pointer; position: relative;
+  transition: background .2s;
+}
+.toggle::after {
+  content: ''; position: absolute; width: 16px; height: 16px;
+  background: #fff; border-radius: 50%; top: 3px; left: 3px;
+  transition: left .2s;
+}
+.toggle.on { background: var(--accent); }
+.toggle.on::after { left: 19px; }
+
+/* History panel */
+.history-panel {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 500;
+  background: var(--surface); border-top: 1px solid var(--border);
+  max-height: 0; overflow: hidden; transition: max-height .3s;
+}
+.history-panel.open { max-height: 220px; }
+.history-handle { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; cursor: pointer; }
+.history-handle h3 { font-family: 'Syne', sans-serif; font-size: .9rem; font-weight: 700; }
+.history-list { padding: 0 16px 12px; overflow-y: auto; max-height: 160px; display: flex; flex-direction: column; gap: 4px; }
+.history-item { display: flex; gap: 10px; align-items: center; font-size: .78rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.history-time { color: var(--text3); min-width: 42px; }
+.history-emp { font-weight: 600; color: var(--accent); min-width: 70px; }
+.history-loc { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── MODALS ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  z-index: 2000; display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px; width: 100%; max-width: 440px;
+  display: flex; flex-direction: column; gap: 14px;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal h2 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: .75rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+.link-box {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 20px;
-  font-size: .85rem; z-index: 9999;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s;
-  white-space: nowrap;
+  border-radius: 8px; padding: 10px 12px;
+  font-size: .75rem; color: var(--text2);
+  word-break: break-all; line-height: 1.5;
 }
-.toast.show { opacity: 1; }
+.link-qr { display: flex; justify-content: center; }
 
-/* ── RESPONSIVE ── */
+/* PIN setup in modal */
+.pin-display {
+  display: flex; gap: 8px; justify-content: center; margin: 4px 0;
+}
+.pin-digit {
+  width: 42px; height: 52px; background: var(--surface2);
+  border: 2px solid var(--border); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;
+  color: var(--accent);
+}
+.pin-digit.filled { border-color: var(--accent); }
+
+/* PIN unlock screen overlay */
+.pin-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 3000;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+}
+.pin-overlay.hidden { display: none; }
+.pin-overlay h2 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--accent); }
+.pin-overlay p { color: var(--text2); font-size: .9rem; text-align: center; }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 220px; }
+.pin-key {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700;
+  padding: 16px; border-radius: 12px; cursor: pointer;
+  transition: all .15s; text-align: center;
+}
+.pin-key:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+.pin-key.del { font-size: .9rem; color: var(--danger); }
+.pin-error { color: var(--danger); font-size: .85rem; animation: shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+/* Position patron */
+#patronMarkerInfo {
+  position: absolute; bottom: 90px; right: 12px; z-index: 600;
+  background: rgba(17,19,24,.9); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 12px; font-size: .78rem; color: var(--text2);
+  backdrop-filter: blur(8px); display: none;
+}
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 20px; border-radius: 10px;
+  font-size: .85rem; opacity: 0; transition: all .25s; z-index: 9999;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── MOBILE ── */
 @media (max-width: 768px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { max-height: 45vh; }
@@ -354,14 +371,46 @@ input:focus { border-color: var(--accent); }
 </head>
 <body>
 
+<!-- PIN UNLOCK OVERLAY (affiché si PIN défini) -->
+<div class="pin-overlay hidden" id="pinOverlay">
+  <div class="logo" style="font-family:Syne,sans-serif;font-size:1.4rem;font-weight:800">
+    <div class="logo-dot" style="width:12px;height:12px;background:#00e5a0;border-radius:50%"></div>
+    TrackTeam
+  </div>
+  <h2>🔒 Dashboard sécurisé</h2>
+  <p id="pinOverlayHint">Entrez votre code PIN pour accéder</p>
+  <div class="pin-display" id="pinDisplay">
+    <div class="pin-digit" id="pd0">—</div>
+    <div class="pin-digit" id="pd1">—</div>
+    <div class="pin-digit" id="pd2">—</div>
+    <div class="pin-digit" id="pd3">—</div>
+  </div>
+  <div class="pin-error" id="pinError" style="opacity:0">Code incorrect</div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinInput('1')">1</button>
+    <button class="pin-key" onclick="pinInput('2')">2</button>
+    <button class="pin-key" onclick="pinInput('3')">3</button>
+    <button class="pin-key" onclick="pinInput('4')">4</button>
+    <button class="pin-key" onclick="pinInput('5')">5</button>
+    <button class="pin-key" onclick="pinInput('6')">6</button>
+    <button class="pin-key" onclick="pinInput('7')">7</button>
+    <button class="pin-key" onclick="pinInput('8')">8</button>
+    <button class="pin-key" onclick="pinInput('9')">9</button>
+    <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    <button class="pin-key" onclick="pinInput('0')">0</button>
+    <button class="pin-key" onclick="pinClear()" style="font-size:.75rem;color:var(--text2)">C</button>
+  </div>
+</div>
+
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
     TrackTeam
   </div>
   <div class="header-right">
-    <span style="font-size:.8rem;color:var(--text2)">Dashboard Patron</span>
+    <span style="font-size:.78rem;color:var(--text2)">Dashboard Patron</span>
     <button class="btn btn-outline btn-sm" onclick="showZonePanel()">⚙ Zones</button>
+    <button class="btn btn-outline btn-sm" onclick="showPinSetup()">🔒 PIN</button>
     <button class="btn btn-accent btn-sm" onclick="showAddEmployee()">+ Employé</button>
   </div>
 </header>
@@ -393,7 +442,7 @@ input:focus { border-color: var(--accent); }
     <div class="employees-list" id="employeesList">
       <div class="empty-state">
         <div class="empty-icon">👥</div>
-        <p>Aucun employé.<br>Ajoutez un employé et partagez-lui son lien de géolocalisation.</p>
+        <p>Aucun employé.<br>Ajoutez un employé et partagez-lui son lien.</p>
       </div>
     </div>
   </div>
@@ -418,7 +467,10 @@ input:focus { border-color: var(--accent); }
     <div class="map-controls">
       <button class="btn btn-outline btn-sm btn-icon" onclick="fitAllMarkers()" title="Vue globale">🗺</button>
       <button class="btn btn-outline btn-sm btn-icon" onclick="toggleHistory()" title="Historique">📍</button>
+      <button class="btn btn-outline btn-sm btn-icon" onclick="locatePatron()" title="Ma position">📡</button>
     </div>
+
+    <div id="patronMarkerInfo">📡 Ma position active</div>
 
     <!-- Zone panel -->
     <div class="zone-panel" id="zonePanel">
@@ -431,14 +483,14 @@ input:focus { border-color: var(--accent); }
         <span>Rayon (km)</span>
         <input type="number" id="zoneRadius" value="5" min="0.1" max="100" step="0.1" style="width:100%;margin-top:4px" onchange="updateZoneCircle()">
       </div>
-      <div style="font-size:.75rem;color:var(--text2);margin-top:8px">Clic sur la carte pour définir le centre de la zone.</div>
+      <div style="font-size:.75rem;color:var(--text2);margin-top:8px">Clic sur la carte pour définir le centre.</div>
       <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px" onclick="showZonePanel()">Fermer</button>
     </div>
 
     <!-- History panel -->
     <div class="history-panel" id="historyPanel">
       <div class="history-handle" onclick="toggleHistory()">
-        <h3>📍 Historique des positions</h3>
+        <h3>📍 Historique des déplacements</h3>
         <span style="color:var(--text3)">▼</span>
       </div>
       <div class="history-list" id="historyList">
@@ -460,6 +512,20 @@ input:focus { border-color: var(--accent); }
       <label>Poste / Rôle</label>
       <input type="text" id="empRole" placeholder="ex: Livreur, Technicien...">
     </div>
+    <div class="form-group">
+      <label>Code PIN (optionnel — protège le lien)</label>
+      <input type="password" id="empPin" placeholder="ex: 1234 (laisser vide = pas de PIN)" maxlength="6">
+    </div>
+    <div class="form-group">
+      <label>Expiration du lien</label>
+      <select id="empExpiry" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:inherit;font-size:.9rem;width:100%;outline:none">
+        <option value="0">Jamais (permanent)</option>
+        <option value="1">1 jour</option>
+        <option value="3">3 jours</option>
+        <option value="7">7 jours</option>
+        <option value="30">30 jours</option>
+      </select>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('addEmpModal')">Annuler</button>
       <button class="btn btn-accent" onclick="addEmployee()">Créer & Obtenir le lien</button>
@@ -471,13 +537,53 @@ input:focus { border-color: var(--accent); }
 <div class="modal-overlay" id="linkModal">
   <div class="modal">
     <h2>🔗 Lien employé</h2>
-    <p style="color:var(--text2);font-size:.85rem;margin-bottom:6px">Partagez ce lien à votre employé. Il s'ouvrira sur son téléphone et enverra sa position en temps réel.</p>
+    <p style="color:var(--text2);font-size:.85rem">Partagez ce lien à votre employé. Il enverra sa position en temps réel.</p>
+    <div id="linkExpInfo" style="font-size:.78rem;color:var(--warn);display:none">⏱ Ce lien expire dans <span id="linkExpText"></span></div>
+    <div id="linkPinInfo" style="font-size:.78rem;color:var(--accent);display:none">🔒 PIN requis : <span id="linkPinText"></span></div>
     <div class="link-box" id="linkDisplay"></div>
     <div class="link-qr" id="qrContainer"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('linkModal')">Fermer</button>
-      <button class="btn btn-accent" onclick="copyLink()">📋 Copier le lien</button>
+      <button class="btn btn-accent" onclick="copyLink()">📋 Copier</button>
       <button class="btn btn-outline" onclick="shareLink()">📤 Partager</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PIN SETUP MODAL ── -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal">
+    <h2>🔒 Sécuriser le dashboard</h2>
+    <p style="color:var(--text2);font-size:.85rem">Définissez un code PIN pour protéger l'accès au dashboard patron.</p>
+    <div class="form-group">
+      <label>Nouveau PIN (4 chiffres)</label>
+      <input type="password" id="newPin" placeholder="ex: 1234" maxlength="4" pattern="[0-9]{4}">
+    </div>
+    <div class="form-group">
+      <label>Confirmer le PIN</label>
+      <input type="password" id="confirmPin" placeholder="Répétez le PIN" maxlength="4" pattern="[0-9]{4}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('pinModal')">Annuler</button>
+      <button class="btn btn-danger btn-sm" onclick="removePin()">Supprimer PIN</button>
+      <button class="btn btn-accent" onclick="savePin()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NAVIGATION MODAL ── -->
+<div class="modal-overlay" id="navModal">
+  <div class="modal">
+    <h2>🧭 Navigation vers <span id="navEmpName"></span></h2>
+    <p style="color:var(--text2);font-size:.85rem" id="navInfo">Choisissez votre application de navigation</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+      <button class="btn btn-nav" onclick="openNav('gmaps')">🗺 Google Maps</button>
+      <button class="btn btn-outline" onclick="openNav('waze')">🔵 Waze</button>
+      <button class="btn btn-outline" onclick="openNav('osm')">🌍 OpenStreetMap</button>
+      <button class="btn btn-outline" style="color:var(--accent);border-color:var(--accent)" onclick="showRouteOnMap()">📍 Voir itinéraire sur la carte</button>
+    </div>
+    <div class="modal-actions" style="margin-top:4px">
+      <button class="btn btn-outline" onclick="closeModal('navModal')">Fermer</button>
     </div>
   </div>
 </div>
@@ -501,29 +607,29 @@ let zoneRadius = 5;
 let currentLinkUrl = '';
 let activeEmpId = null;
 let db, _ref, _set, _onValue, _push, _remove;
+let currentListener = null;
+let patronMarker = null;
+let patronLat = null, patronLng = null;
+let routingControl = null;
+let navTargetLat = null, navTargetLng = null;
+let navTargetName = '';
+let pinBuffer = '';
 
 // ══════════════════════════════════════════════
-//  INIT MAP
+//  MAP
 // ══════════════════════════════════════════════
 function initMap() {
-  map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 6);
+  map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 7);
 
-  // Google Maps Satellite — couverture mondiale complète
   const satellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    attribution: '© Google Maps',
-    maxZoom: 20,
-    subdomains: ['0','1','2','3']
+    attribution: '© Google Maps', maxZoom: 20, subdomains: ['0','1','2','3']
   });
-
-  // Plan OpenStreetMap
   const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
   });
 
   satellite.addTo(map);
 
-  // Bouton bascule satellite / plan
   let isSatellite = true;
   const toggleBtn = L.control({ position: 'bottomright' });
   toggleBtn.onAdd = function() {
@@ -532,60 +638,112 @@ function initMap() {
     btn.style.cssText = 'background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 14px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)';
     btn.onclick = function(e) {
       L.DomEvent.stopPropagation(e);
-      if (isSatellite) {
-        map.removeLayer(satellite);
-        street.addTo(map);
-        btn.innerHTML = '🛰 Satellite';
-        isSatellite = false;
-      } else {
-        map.removeLayer(street);
-        satellite.addTo(map);
-        btn.innerHTML = '🗺 Plan';
-        isSatellite = true;
-      }
+      if (isSatellite) { map.removeLayer(satellite); street.addTo(map); btn.innerHTML = '🛰 Satellite'; isSatellite = false; }
+      else { map.removeLayer(street); satellite.addTo(map); btn.innerHTML = '🗺 Plan'; isSatellite = true; }
     };
     return btn;
   };
   toggleBtn.addTo(map);
-
   L.control.zoom({ position: 'topright' }).addTo(map);
 
   map.on('click', function(e) {
-    if (zoneEnabled) {
-      zoneCenter = e.latlng;
-      updateZoneCircle();
-    }
+    if (zoneEnabled) { zoneCenter = e.latlng; updateZoneCircle(); }
   });
 }
 
 // ══════════════════════════════════════════════
-//  FIREBASE INIT
+//  FIREBASE
 // ══════════════════════════════════════════════
 window.addEventListener('firebaseReady', () => {
-  db = window._db;
-  _ref = window._ref;
-  _set = window._set;
-  _onValue = window._onValue;
-  _push = window._push;
-  _remove = window._remove;
-
+  db = window._db; _ref = window._ref; _set = window._set;
+  _onValue = window._onValue; _push = window._push; _remove = window._remove;
   loadCompany();
   listenEmployees();
 });
 
-// Fallback si Firebase n'est pas configuré (démo locale)
 setTimeout(() => {
-  if (!window._firebaseReady) {
-    console.warn('Firebase non configuré — mode démo local');
-    loadLocalDemo();
-  }
+  if (!window._firebaseReady) { console.warn('Firebase non configuré'); loadLocalDemo(); }
 }, 2000);
+
+// ══════════════════════════════════════════════
+//  PIN DASHBOARD
+// ══════════════════════════════════════════════
+function checkPinOnLoad() {
+  const pin = localStorage.getItem('tt_dashboard_pin');
+  if (pin) {
+    document.getElementById('pinOverlay').classList.remove('hidden');
+  }
+}
+
+function pinInput(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDisplay();
+  if (pinBuffer.length === 4) {
+    setTimeout(verifyPin, 150);
+  }
+}
+
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDisplay();
+}
+
+function pinClear() {
+  pinBuffer = '';
+  updatePinDisplay();
+}
+
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('pd' + i);
+    if (i < pinBuffer.length) { el.textContent = '●'; el.classList.add('filled'); }
+    else { el.textContent = '—'; el.classList.remove('filled'); }
+  }
+}
+
+function verifyPin() {
+  const stored = localStorage.getItem('tt_dashboard_pin');
+  if (pinBuffer === stored) {
+    document.getElementById('pinOverlay').classList.add('hidden');
+    pinBuffer = '';
+    updatePinDisplay();
+  } else {
+    const errEl = document.getElementById('pinError');
+    errEl.style.opacity = '1';
+    errEl.style.animation = 'none';
+    setTimeout(() => { errEl.style.animation = 'shake .3s'; errEl.style.opacity = '1'; }, 10);
+    setTimeout(() => { errEl.style.opacity = '0'; }, 1500);
+    pinBuffer = '';
+    updatePinDisplay();
+  }
+}
+
+function showPinSetup() {
+  document.getElementById('newPin').value = '';
+  document.getElementById('confirmPin').value = '';
+  document.getElementById('pinModal').classList.add('show');
+}
+
+function savePin() {
+  const p1 = document.getElementById('newPin').value.trim();
+  const p2 = document.getElementById('confirmPin').value.trim();
+  if (!/^\d{4}$/.test(p1)) { showToast('PIN doit être 4 chiffres'); return; }
+  if (p1 !== p2) { showToast('Les PINs ne correspondent pas'); return; }
+  localStorage.setItem('tt_dashboard_pin', p1);
+  closeModal('pinModal');
+  showToast('PIN défini — dashboard sécurisé ✅');
+}
+
+function removePin() {
+  localStorage.removeItem('tt_dashboard_pin');
+  closeModal('pinModal');
+  showToast('PIN supprimé');
+}
 
 // ══════════════════════════════════════════════
 //  COMPANY
 // ══════════════════════════════════════════════
-let currentListener = null;
-
 function loadCompany() {
   const name = localStorage.getItem('tt_company') || '';
   const code = localStorage.getItem('tt_code') || '';
@@ -595,8 +753,7 @@ function loadCompany() {
 }
 
 function saveCompanyName() {
-  const name = document.getElementById('companyName').value;
-  localStorage.setItem('tt_company', name);
+  localStorage.setItem('tt_company', document.getElementById('companyName').value);
 }
 
 function generateCode() {
@@ -614,8 +771,8 @@ function connectCode() {
   if (!code) { showToast('Entrez un code'); return; }
   localStorage.setItem('tt_code', code);
   document.getElementById('companyCode').value = code;
-  Object.keys(markers).forEach(id => { map.removeLayer(markers[id]); });
-  Object.keys(polylines).forEach(id => { map.removeLayer(polylines[id]); });
+  Object.keys(markers).forEach(id => map.removeLayer(markers[id]));
+  Object.keys(polylines).forEach(id => map.removeLayer(polylines[id]));
   markers = {}; polylines = {}; employees = {}; activeEmpId = null;
   renderEmployees(); updateStats();
   if (db) listenEmployees();
@@ -633,6 +790,8 @@ function copyCode() {
 function showAddEmployee() {
   document.getElementById('empName').value = '';
   document.getElementById('empRole').value = '';
+  document.getElementById('empPin').value = '';
+  document.getElementById('empExpiry').value = '0';
   document.getElementById('addEmpModal').classList.add('show');
   setTimeout(() => document.getElementById('empName').focus(), 100);
 }
@@ -640,34 +799,34 @@ function showAddEmployee() {
 function addEmployee() {
   const name = document.getElementById('empName').value.trim();
   const role = document.getElementById('empRole').value.trim();
+  const pin = document.getElementById('empPin').value.trim();
+  const expiryDays = parseInt(document.getElementById('empExpiry').value);
   if (!name) { showToast('Entrez un nom'); return; }
 
   const id = 'emp_' + Date.now();
   const code = localStorage.getItem('tt_code') || 'DEMO';
-  const emp = { id, name, role: role || 'Employé', online: false, lat: null, lng: null, lastSeen: null };
+  const expiresAt = expiryDays > 0 ? Date.now() + expiryDays * 86400000 : 0;
+
+  const emp = {
+    id, name, role: role || 'Employé',
+    online: false, lat: null, lng: null, lastSeen: null,
+    pin: pin || null,
+    expiresAt: expiresAt,
+    trail: []
+  };
 
   employees[id] = emp;
-
-  if (db) {
-    _set(_ref(db, `companies/${code}/employees/${id}`), emp);
-  } else {
-    saveLocal();
-    renderEmployees();
-  }
+  if (db) _set(_ref(db, `companies/${code}/employees/${id}`), emp);
+  else { saveLocal(); renderEmployees(); }
 
   closeModal('addEmpModal');
-  showEmployeeLink(id, name);
+  showEmployeeLink(id, name, pin, expiresAt);
 }
 
 function removeEmployee(id) {
   const code = localStorage.getItem('tt_code') || 'DEMO';
-  if (db) {
-    _remove(_ref(db, `companies/${code}/employees/${id}`));
-  } else {
-    delete employees[id];
-    saveLocal();
-    renderEmployees();
-  }
+  if (db) _remove(_ref(db, `companies/${code}/employees/${id}`));
+  else { delete employees[id]; saveLocal(); renderEmployees(); }
   if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
   if (polylines[id]) { map.removeLayer(polylines[id]); delete polylines[id]; }
   showToast('Employé supprimé');
@@ -677,7 +836,18 @@ function listenEmployees() {
   const code = localStorage.getItem('tt_code') || 'DEMO';
   if (currentListener) { currentListener(); currentListener = null; }
   currentListener = _onValue(_ref(db, `companies/${code}/employees`), snap => {
+    const prev = JSON.stringify(employees);
     employees = snap.val() || {};
+    // Enregistrer historique si position changée
+    Object.values(employees).forEach(emp => {
+      if (emp.lat && emp.lng) {
+        const last = posHistory.filter(h => h.id === emp.id).pop();
+        if (!last || last.lat !== emp.lat || last.lng !== emp.lng) {
+          posHistory.push({ id: emp.id, name: emp.name, lat: +emp.lat, lng: +emp.lng, ts: Date.now() });
+          if (posHistory.length > 200) posHistory.shift();
+        }
+      }
+    });
     renderEmployees();
     updateMarkers();
     updateStats();
@@ -700,6 +870,11 @@ function renderEmployees() {
     const emp = employees[id];
     const online = emp.online || false;
     const lastSeen = emp.lastSeen ? timeAgo(emp.lastSeen) : 'jamais';
+    const expired = emp.expiresAt && emp.expiresAt > 0 && Date.now() > emp.expiresAt;
+    const expTag = expired ? '<span style="color:var(--danger);font-size:.7rem">⏱ Expiré</span>' :
+                   (emp.expiresAt > 0 ? `<span style="color:var(--warn);font-size:.7rem">⏱ ${timeAgo(Date.now() + (emp.expiresAt - Date.now()))}</span>` : '');
+    const pinTag = emp.pin ? '<span style="color:var(--accent);font-size:.7rem">🔒 PIN</span>' : '';
+
     const card = document.createElement('div');
     card.className = 'employee-card' + (activeEmpId === id ? ' active' : '');
     card.innerHTML = `
@@ -711,13 +886,14 @@ function renderEmployees() {
         </span>
       </div>
       <div class="emp-meta">
-        <span>💼 ${emp.role}</span>
+        <span>💼 ${emp.role} ${pinTag} ${expTag}</span>
         ${emp.lat ? `<span>📍 ${(+emp.lat).toFixed(4)}, ${(+emp.lng).toFixed(4)}</span>` : '<span>📍 Position inconnue</span>'}
         <span>⏱ ${lastSeen}</span>
       </div>
       <div class="emp-actions">
-        <button class="btn btn-outline btn-sm" onclick="focusEmployee('${id}');event.stopPropagation()">🗺 Localiser</button>
-        <button class="btn btn-outline btn-sm" onclick="showEmployeeLink('${id}','${emp.name}');event.stopPropagation()">🔗 Lien</button>
+        <button class="btn btn-outline btn-sm" onclick="focusEmployee('${id}');event.stopPropagation()">🗺</button>
+        <button class="btn btn-nav btn-sm" onclick="navigateTo('${id}');event.stopPropagation()">🧭 Nav</button>
+        <button class="btn btn-outline btn-sm" onclick="showEmployeeLink('${id}','${emp.name}',${emp.pin ? `'${emp.pin}'` : 'null'},${emp.expiresAt||0});event.stopPropagation()">🔗</button>
         <button class="btn btn-danger btn-sm" onclick="removeEmployee('${id}');event.stopPropagation()">✕</button>
       </div>
     `;
@@ -749,7 +925,6 @@ function updateMarkers() {
     const isOnline = emp.online || false;
     const initials = emp.name.slice(0,2).toUpperCase();
 
-    // Marqueur amélioré : grand, pulsant si en ligne, avec nom en dessous
     const pulse = isOnline ? `
       <div style="position:absolute;inset:-8px;border-radius:50%;border:3px solid ${color};opacity:0.5;animation:markerPulse 1.8s ease-out infinite;pointer-events:none"></div>
       <div style="position:absolute;inset:-16px;border-radius:50%;border:2px solid ${color};opacity:0.2;animation:markerPulse 1.8s ease-out infinite .4s;pointer-events:none"></div>
@@ -764,63 +939,45 @@ function updateMarkers() {
           </div>
           <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid ${color};z-index:1"></div>
         </div>
-        <div style="margin-top:6px;background:rgba(0,0,0,.75);color:#fff;font-size:.72rem;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;font-family:'DM Sans',sans-serif;border:1px solid rgba(255,255,255,.15)">${emp.name}</div>
+        <div style="margin-top:6px;background:rgba(0,0,0,.8);color:#fff;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;border:1px solid rgba(255,255,255,.15)">${emp.name}</div>
       </div>`;
 
-    const icon = L.divIcon({
-      className: '',
-      html,
-      iconSize: [80, 80],
-      iconAnchor: [40, 64]
-    });
+    const icon = L.divIcon({ className: '', html, iconSize: [80, 80], iconAnchor: [40, 64] });
 
     const wasNew = !markers[id];
-    if (markers[id]) {
-      markers[id].setLatLng(latlng).setIcon(icon);
-    } else {
-      markers[id] = L.marker(latlng, { icon }).addTo(map);
-    }
+    if (markers[id]) { markers[id].setLatLng(latlng).setIcon(icon); }
+    else { markers[id] = L.marker(latlng, { icon }).addTo(map); }
 
-    // Popup détaillée
     const acc = emp.accuracy ? `± ${emp.accuracy} m` : '—';
     const lastSeen = emp.lastSeen ? timeAgo(emp.lastSeen) : 'jamais';
     markers[id].bindPopup(`
-      <div style="min-width:160px">
+      <div style="min-width:180px">
         <div style="font-family:Syne,sans-serif;font-weight:700;font-size:1rem;margin-bottom:4px">${emp.name}</div>
         <div style="color:#7a8494;font-size:.8rem;margin-bottom:8px">💼 ${emp.role}</div>
-        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:3px">
+        <div style="font-size:.8rem;display:flex;flex-direction:column;gap:4px">
           <span>${isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}</span>
           <span>📍 ${(+emp.lat).toFixed(5)}, ${(+emp.lng).toFixed(5)}</span>
-          <span>🎯 Précision : ${acc}</span>
+          <span>🎯 ${acc}</span>
           <span>🕐 ${lastSeen}</span>
         </div>
+        <button onclick="navigateTo('${id}')" style="margin-top:10px;width:100%;background:#0099ff;color:#fff;border:none;padding:7px;border-radius:7px;font-family:DM Sans,sans-serif;font-weight:600;font-size:.82rem;cursor:pointer">🧭 Naviguer vers ${emp.name}</button>
       </div>
     `);
 
-    // Auto-zoom sur l'employé actif quand sa position change
-    if (!wasNew && activeEmpId === id) {
-      map.panTo(latlng, { animate: true, duration: 0.8 });
-    }
-    // Premier apparition → zoom automatique
-    if (wasNew) {
-      map.flyTo(latlng, 17, { duration: 1.5 });
-      activeEmpId = id;
-    }
+    if (!wasNew && activeEmpId === id) map.panTo(latlng, { animate: true, duration: 0.8 });
+    if (wasNew) { map.flyTo(latlng, 17, { duration: 1.5 }); activeEmpId = id; }
 
     // Trail
-    if (!emp.trail) emp.trail = [];
-    if (emp.trail) {
+    if (emp.trail && emp.trail.length > 1) {
       if (polylines[id]) map.removeLayer(polylines[id]);
-      if (emp.trail.length > 1) {
-        polylines[id] = L.polyline(emp.trail.map(p => [p.lat, p.lng]), { color, weight: 3, opacity: .7, dashArray: '5 7' }).addTo(map);
-      }
+      polylines[id] = L.polyline(emp.trail.map(p => [p.lat, p.lng]), { color, weight: 3, opacity: .7, dashArray: '5 7' }).addTo(map);
     }
   });
 }
 
 function focusEmployee(id) {
   const emp = employees[id];
-  if (!emp || !emp.lat) { showToast('Position inconnue pour cet employé'); return; }
+  if (!emp || !emp.lat) { showToast('Position inconnue'); return; }
   activeEmpId = id;
   map.flyTo([+emp.lat, +emp.lng], 18, { duration: 1.2 });
   setTimeout(() => { if (markers[id]) markers[id].openPopup(); }, 1300);
@@ -830,7 +987,99 @@ function fitAllMarkers() {
   const positioned = Object.values(employees).filter(e => e.lat && e.lng);
   if (!positioned.length) { showToast('Aucune position disponible'); return; }
   const bounds = L.latLngBounds(positioned.map(e => [+e.lat, +e.lng]));
+  if (patronLat) bounds.extend([patronLat, patronLng]);
   map.fitBounds(bounds, { padding: [60, 60] });
+}
+
+// ══════════════════════════════════════════════
+//  POSITION DU PATRON
+// ══════════════════════════════════════════════
+function locatePatron() {
+  if (!navigator.geolocation) { showToast('Géolocalisation non supportée'); return; }
+  showToast('Localisation en cours...');
+  navigator.geolocation.watchPosition(pos => {
+    patronLat = pos.coords.latitude;
+    patronLng = pos.coords.longitude;
+
+    const patronIcon = L.divIcon({
+      className: '',
+      html: `<div style="display:flex;flex-direction:column;align-items:center">
+        <div style="width:40px;height:40px;background:#6c5ce7;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 14px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📡</div>
+        <div style="margin-top:5px;background:rgba(108,92,231,.9);color:#fff;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap">Moi (Patron)</div>
+      </div>`,
+      iconSize: [80, 70], iconAnchor: [40, 55]
+    });
+
+    if (patronMarker) patronMarker.setLatLng([patronLat, patronLng]);
+    else {
+      patronMarker = L.marker([patronLat, patronLng], { icon: patronIcon }).addTo(map);
+      patronMarker.bindPopup('<b>📡 Ma position</b><br>Patron — en direct');
+    }
+
+    document.getElementById('patronMarkerInfo').style.display = 'block';
+  }, err => { showToast('Erreur GPS : ' + err.message); }, { enableHighAccuracy: true, maximumAge: 5000 });
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function navigateTo(empId) {
+  const emp = employees[empId];
+  if (!emp || !emp.lat) { showToast('Position inconnue pour ' + (emp ? emp.name : 'cet employé')); return; }
+  navTargetLat = +emp.lat;
+  navTargetLng = +emp.lng;
+  navTargetName = emp.name;
+  document.getElementById('navEmpName').textContent = emp.name;
+
+  if (patronLat) {
+    document.getElementById('navInfo').textContent = `De votre position vers ${emp.name} — choisissez votre app`;
+  } else {
+    document.getElementById('navInfo').textContent = `Destination : ${emp.name} — activez 📡 pour voir votre position`;
+  }
+  document.getElementById('navModal').classList.add('show');
+}
+
+function openNav(app) {
+  const lat = navTargetLat, lng = navTargetLng;
+  let url = '';
+  if (app === 'gmaps') {
+    url = patronLat
+      ? `https://www.google.com/maps/dir/${patronLat},${patronLng}/${lat},${lng}`
+      : `https://www.google.com/maps?q=${lat},${lng}`;
+  } else if (app === 'waze') {
+    url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  } else if (app === 'osm') {
+    url = `https://www.openstreetmap.org/directions?from=${patronLat||''},${patronLng||''}&to=${lat},${lng}`;
+  }
+  window.open(url, '_blank');
+  closeModal('navModal');
+}
+
+function showRouteOnMap() {
+  closeModal('navModal');
+  if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+
+  const from = patronLat ? L.latLng(patronLat, patronLng) : null;
+  const to = L.latLng(navTargetLat, navTargetLng);
+
+  if (!from) {
+    showToast('Activez 📡 pour voir l\'itinéraire depuis votre position');
+    map.flyTo(to, 16);
+    return;
+  }
+
+  routingControl = L.Routing.control({
+    waypoints: [from, to],
+    routeWhileDragging: false,
+    showAlternatives: false,
+    fitSelectedRoutes: true,
+    lineOptions: { styles: [{ color: '#0099ff', weight: 5, opacity: .8 }] },
+    createMarker: () => null,
+    collapsible: true,
+    language: 'fr'
+  }).addTo(map);
+
+  showToast('Itinéraire calculé vers ' + navTargetName);
 }
 
 // ══════════════════════════════════════════════
@@ -859,6 +1108,10 @@ function checkZoneAlerts() {
       const banner = document.getElementById('alertBanner');
       document.getElementById('alertText').textContent = `⚠ ${emp.name} est hors zone (${dist.toFixed(1)} km)`;
       banner.classList.add('show');
+      // Notification navigateur
+      if (Notification.permission === 'granted') {
+        new Notification('TrackTeam — Alerte zone', { body: `${emp.name} est hors zone (${dist.toFixed(1)} km)`, icon: '' });
+      }
       setTimeout(() => banner.classList.remove('show'), 5000);
     }
   });
@@ -866,6 +1119,11 @@ function checkZoneAlerts() {
 
 function showZonePanel() {
   document.getElementById('zonePanel').classList.toggle('show');
+}
+
+// Demander permission notifications
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
 }
 
 // ══════════════════════════════════════════════
@@ -882,8 +1140,8 @@ function renderHistory() {
     list.innerHTML = `<div style="color:var(--text3);font-size:.82rem;padding:10px 0">Aucun historique pour le moment.</div>`;
     return;
   }
-  list.innerHTML = posHistory.slice(-30).reverse().map(h => `
-    <div class="history-item">
+  list.innerHTML = posHistory.slice(-50).reverse().map(h => `
+    <div class="history-item" onclick="map.flyTo([${h.lat},${h.lng}],17)" style="cursor:pointer">
       <span class="history-time">${formatTime(h.ts)}</span>
       <span class="history-emp">${h.name}</span>
       <span class="history-loc">📍 ${h.lat.toFixed(4)}, ${h.lng.toFixed(4)}</span>
@@ -894,14 +1152,31 @@ function renderHistory() {
 // ══════════════════════════════════════════════
 //  EMPLOYEE LINK
 // ══════════════════════════════════════════════
-function showEmployeeLink(id, name) {
+function showEmployeeLink(id, name, pin, expiresAt) {
   const code = document.getElementById('companyCode').value || localStorage.getItem('tt_code') || 'DEMO';
   const base = window.location.href.replace('index.html','').replace(/\/$/, '');
-  const url = `${base}/tracker.html?company=${code}&emp=${id}&name=${encodeURIComponent(name)}`;
+  let url = `${base}/tracker.html?company=${code}&emp=${id}&name=${encodeURIComponent(name)}`;
+  if (pin) url += `&pin=${encodeURIComponent(pin)}`;
+  if (expiresAt) url += `&expires=${expiresAt}`;
+
   currentLinkUrl = url;
   document.getElementById('linkDisplay').textContent = url;
 
-  // QR code via API gratuite
+  // Infos PIN
+  const pinInfo = document.getElementById('linkPinInfo');
+  const pinText = document.getElementById('linkPinText');
+  if (pin) { pinInfo.style.display = 'block'; pinText.textContent = pin; }
+  else { pinInfo.style.display = 'none'; }
+
+  // Infos expiration
+  const expInfo = document.getElementById('linkExpInfo');
+  const expText = document.getElementById('linkExpText');
+  if (expiresAt > 0) {
+    expInfo.style.display = 'block';
+    const days = Math.ceil((expiresAt - Date.now()) / 86400000);
+    expText.textContent = days + ' jour(s)';
+  } else { expInfo.style.display = 'none'; }
+
   const qr = document.getElementById('qrContainer');
   qr.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}&bgcolor=111318&color=00e5a0" alt="QR Code" style="width:160px;height:160px">`;
 
@@ -913,23 +1188,19 @@ function copyLink() {
 }
 
 function shareLink() {
-  if (navigator.share) {
-    navigator.share({ title: 'TrackTeam — Position en direct', url: currentLinkUrl });
-  } else {
-    copyLink();
-  }
+  if (navigator.share) navigator.share({ title: 'TrackTeam — Position en direct', url: currentLinkUrl });
+  else copyLink();
 }
 
 // ══════════════════════════════════════════════
-//  LOCAL DEMO (sans Firebase)
+//  LOCAL DEMO
 // ══════════════════════════════════════════════
 function loadLocalDemo() {
   const saved = localStorage.getItem('tt_employees');
   employees = saved ? JSON.parse(saved) : {};
   const code = localStorage.getItem('tt_code');
   if (!code) generateCode();
-  renderEmployees();
-  updateStats();
+  renderEmployees(); updateStats();
   showToast('Mode local (Firebase non configuré)');
 }
 
@@ -962,17 +1233,15 @@ function formatTime(ts) {
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-// Close modals on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('show'); });
 });
-
-// Enter key on inputs
 document.getElementById('empName').addEventListener('keydown', e => { if (e.key === 'Enter') addEmployee(); });
 
 // ── INIT ──
 initMap();
 loadCompany();
+checkPinOnLoad();
 </script>
 </body>
 </html>
