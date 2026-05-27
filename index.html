@@ -508,12 +508,52 @@ let db, _ref, _set, _onValue, _push, _remove;
 function initMap() {
   map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 6);
 
-  // Tuiles CartoDB Voyager — routes très détaillées, style clair
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO',
-    maxZoom: 20,
-    subdomains: 'abcd'
-  }).addTo(map);
+  // Satellite ESRI — vue aérienne gratuite + labels des rues par dessus
+  const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri © USGS © USDA',
+    maxZoom: 19
+  });
+
+  const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '',
+    maxZoom: 19,
+    opacity: 0.9
+  });
+
+  satellite.addTo(map);
+  labels.addTo(map);
+
+  // Bouton pour basculer satellite / plan
+  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  });
+
+  let isSatellite = true;
+  const toggleBtn = L.control({ position: 'bottomright' });
+  toggleBtn.onAdd = function() {
+    const btn = L.DomUtil.create('button');
+    btn.innerHTML = '🗺 Plan';
+    btn.style.cssText = 'background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 14px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+    btn.onclick = function(e) {
+      L.DomEvent.stopPropagation(e);
+      if (isSatellite) {
+        map.removeLayer(satellite);
+        map.removeLayer(labels);
+        street.addTo(map);
+        btn.innerHTML = '🛰 Satellite';
+        isSatellite = false;
+      } else {
+        map.removeLayer(street);
+        satellite.addTo(map);
+        labels.addTo(map);
+        btn.innerHTML = '🗺 Plan';
+        isSatellite = true;
+      }
+    };
+    return btn;
+  };
+  toggleBtn.addTo(map);
 
   L.control.zoom({ position: 'topright' }).addTo(map);
 
