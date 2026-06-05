@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>TrackTeam — Partage de position</title>
+<title>TrackTeam — Ma position</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-
-<!-- Firebase -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, update, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+import { getDatabase, ref, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
   authDomain: "mapaet-fc2bb.firebaseapp.com",
@@ -20,658 +19,288 @@ const firebaseConfig = {
   messagingSenderId: "74097061036",
   appId: "1:74097061036:web:c4642ee6b59b7401200309"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-window._db = db;
-window._ref = ref;
-window._set = set;
-window._update = update;
-window._serverTimestamp = serverTimestamp;
-window._onDisconnect = onDisconnect;
-window._firebaseReady = true;
-window.dispatchEvent(new Event('firebaseReady'));
+window._db=db; window._ref=ref; window._update=update; window._onDisconnect=onDisconnect;
+window._firebaseReady=true; window.dispatchEvent(new Event('firebaseReady'));
 </script>
-
 <style>
-:root {
-  --bg: #0a0c10;
-  --surface: #111318;
-  --surface2: #181c24;
-  --border: #1e2330;
-  --accent: #00e5a0;
-  --accent2: #0099ff;
-  --danger: #ff4757;
-  --warn: #ffa502;
-  --text: #e8ecf0;
-  --text2: #7a8494;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'DM Sans', sans-serif;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(0,229,160,.08) 0%, transparent 60%);
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 32px 28px;
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-.card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-}
-
-.logo {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  font-family: 'Syne', sans-serif;
-  font-size: 1.2rem; font-weight: 800;
-  margin-bottom: 28px; color: var(--text2);
-}
-.logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
-
-.avatar {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: #0a0c10;
-  margin: 0 auto 16px;
-  box-shadow: 0 0 30px rgba(0,229,160,.3);
-}
-
-h1 { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
-.subtitle { color: var(--text2); font-size: .88rem; margin-bottom: 28px; }
-
-.status-ring {
-  width: 100px; height: 100px; border-radius: 50%;
-  border: 3px solid var(--border);
-  margin: 0 auto 20px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative; transition: border-color .3s;
-}
-.status-ring.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 30px rgba(0,229,160,.2);
-}
-.status-ring.active::after {
-  content: ''; position: absolute; inset: -8px; border-radius: 50%;
-  border: 2px solid var(--accent); opacity: .3;
-  animation: ripple 2s infinite;
-}
-@keyframes ripple { 0%{transform:scale(1);opacity:.3} 100%{transform:scale(1.3);opacity:0} }
-
-.status-icon { font-size: 2.2rem; }
-.status-text { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-.status-text.green { color: var(--accent); }
-.status-text.red { color: var(--danger); }
-.status-text.orange { color: var(--warn); }
-
-.coords {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 16px; margin: 16px 0;
-  font-size: .82rem; color: var(--text2); text-align: left; display: none;
-}
-.coords.show { display: block; }
-.coord-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.coord-row:last-child { margin-bottom: 0; }
-.coord-val { color: var(--text); font-weight: 500; }
-
-/* Bannière arrière-plan */
-.bg-banner {
-  background: rgba(0,229,160,.08);
-  border: 1px solid rgba(0,229,160,.3);
-  border-radius: 10px; padding: 10px 14px; margin: 10px 0;
-  font-size: .8rem; color: var(--accent);
-  text-align: left; display: none; line-height: 1.6;
-}
-.bg-banner.show { display: block; }
-.bg-banner strong { color: var(--accent); }
-
-.btn-main {
-  width: 100%; padding: 14px; border-radius: 12px; border: none;
-  font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
-  cursor: pointer; transition: all .2s; margin-bottom: 10px;
-}
-.btn-start { background: var(--accent); color: #0a0c10; }
-.btn-start:hover { background: #00c988; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,160,.3); }
-.btn-stop { background: var(--danger); color: #fff; display: none; }
-.btn-stop:hover { background: #e03545; }
-
-.info-box {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 14px;
-  font-size: .8rem; color: var(--text2); text-align: left; margin-top: 10px; line-height: 1.6;
-}
-.info-box strong { color: var(--text); }
-
-.update-counter { font-size: .75rem; color: var(--text2); margin-top: 8px; }
-.update-counter span { color: var(--accent); font-weight: 600; }
-
-.error-msg {
-  background: rgba(255,71,87,.1); border: 1px solid var(--danger);
-  border-radius: 8px; padding: 10px 14px; font-size: .82rem; color: var(--danger);
-  margin: 10px 0; display: none; text-align: left;
-}
-.error-msg.show { display: block; }
-
-/* PIN screen */
-.pin-screen {
-  display: none; flex-direction: column; align-items: center; gap: 16px;
-}
-.pin-screen.show { display: flex; }
-.pin-display { display: flex; gap: 8px; justify-content: center; }
-.pin-digit {
-  width: 42px; height: 52px; background: var(--surface2);
-  border: 2px solid var(--border); border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent);
-}
-.pin-digit.filled { border-color: var(--accent); }
-.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 220px; }
-.pin-key {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700;
-  padding: 16px; border-radius: 12px; cursor: pointer; transition: all .15s; text-align: center;
-}
-.pin-key:hover { border-color: var(--accent); color: var(--accent); }
-.pin-key.del { font-size: .9rem; color: var(--danger); }
-.pin-error { color: var(--danger); font-size: .85rem; animation: none; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-
-.perm-screen { display: none; }
-.perm-screen.show { display: block; }
-.permission-steps { text-align: left; margin: 16px 0; }
-.step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: .85rem; color: var(--text2); }
-.step-num {
-  width: 22px; height: 22px; min-width: 22px; background: var(--accent); color: #0a0c10;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: .72rem; font-weight: 700;
-}
+:root{--bg:#0a0c10;--surface:#111318;--surface2:#181c24;--border:#1e2330;--accent:#00e5a0;--accent2:#0099ff;--danger:#ff4757;--text:#e8ecf0;--text2:#7a8494;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+.app-layout{display:flex;flex-direction:column;height:100vh;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
+.emp-badge{display:flex;align-items:center;gap:8px;}
+.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;color:#0a0c10;flex-shrink:0;}
+.emp-info{display:flex;flex-direction:column;}
+.emp-name{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;line-height:1.2;}
+.emp-code{font-size:.72rem;color:var(--text2);}
+#map{flex:1;width:100%;min-height:0;}
+.bottom-panel{background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;z-index:100;}
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.status-pill{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:.82rem;transition:all .3s;}
+.status-pill.active{border-color:var(--accent);background:rgba(0,229,160,.08);}
+.status-pill.error{border-color:var(--danger);background:rgba(255,71,87,.08);}
+.status-dot-anim{width:8px;height:8px;border-radius:50%;background:var(--text2);flex-shrink:0;}
+.status-dot-anim.active{background:var(--accent);animation:blink 1.5s infinite;}
+.status-dot-anim.error{background:var(--danger);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.coords-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.coord-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;}
+.coord-label{font-size:.65rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.coord-val{font-size:.82rem;font-weight:600;color:var(--text);margin-top:1px;}
+.btn-row{display:flex;gap:8px;}
+.btn{flex:1;padding:11px 10px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-start{background:var(--accent);color:#0a0c10;}
+.btn-start:active{transform:scale(.97);}
+.btn-stop{background:var(--danger);color:#fff;display:none;}
+.btn-center{flex:0 0 44px;padding:11px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:10px;font-size:1rem;cursor:pointer;transition:all .2s;}
+.btn-center:active{border-color:var(--accent);color:var(--accent);}
+.update-info{text-align:center;font-size:.75rem;color:var(--text2);display:none;}
+.update-info span{color:var(--accent);font-weight:700;}
+.bg-banner{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--accent);display:none;align-items:center;gap:8px;}
+.bg-banner.show{display:flex;}
+.error-msg{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--danger);display:none;}
+.error-msg.show{display:block;}
+/* PIN */
+.pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;}
+.pin-overlay.show{display:flex;}
+.pin-overlay h2{font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--accent);text-align:center;}
+.pin-overlay p{color:var(--text2);font-size:.85rem;text-align:center;}
+.pin-display{display:flex;gap:10px;justify-content:center;}
+.pin-digit{width:46px;height:56px;background:var(--surface2);border:2px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);}
+.pin-digit.filled{border-color:var(--accent);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:220px;}
+.pin-key{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;text-align:center;transition:all .15s;}
+.pin-key:active{transform:scale(.95);}
+.pin-key.del{color:var(--danger);font-size:.9rem;}
+.pin-error{color:var(--danger);font-size:.85rem;min-height:20px;}
+/* PERM */
+.perm-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px;text-align:center;}
+.perm-screen.show{display:flex;}
+.perm-screen h2{font-family:'Syne',sans-serif;font-size:1.1rem;}
+.perm-screen p{color:var(--text2);font-size:.85rem;line-height:1.6;}
+.steps{text-align:left;width:100%;max-width:300px;}
+.step{display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:.82rem;color:var(--text2);}
+.step-num{width:22px;height:22px;min-width:22px;background:var(--accent);color:#0a0c10;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;}
+.btn-reload{background:var(--accent);color:#0a0c10;border:none;padding:12px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:8px;}
+@keyframes markerPulse{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.5);opacity:0}}
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="logo"><div class="logo-dot"></div>TrackTeam</div>
+<div class="pin-overlay" id="pinOverlay">
+  <div class="logo" style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800">
+    <div class="logo-dot"></div>TrackTeam
+  </div>
+  <h2>🔒 Lien sécurisé</h2>
+  <p>Entrez le code PIN fourni par votre patron</p>
+  <div class="pin-display">
+    <div class="pin-digit" id="pd0">—</div><div class="pin-digit" id="pd1">—</div>
+    <div class="pin-digit" id="pd2">—</div><div class="pin-digit" id="pd3">—</div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-keypad">
+    <button class="pin-key" onclick="pinInput('1')">1</button>
+    <button class="pin-key" onclick="pinInput('2')">2</button>
+    <button class="pin-key" onclick="pinInput('3')">3</button>
+    <button class="pin-key" onclick="pinInput('4')">4</button>
+    <button class="pin-key" onclick="pinInput('5')">5</button>
+    <button class="pin-key" onclick="pinInput('6')">6</button>
+    <button class="pin-key" onclick="pinInput('7')">7</button>
+    <button class="pin-key" onclick="pinInput('8')">8</button>
+    <button class="pin-key" onclick="pinInput('9')">9</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+    <button class="pin-key" onclick="pinInput('0')">0</button>
+    <button class="pin-key" onclick="pinClear()" style="font-size:.75rem;color:var(--text2)">C</button>
+  </div>
+</div>
 
-  <!-- Écran PIN -->
-  <div class="pin-screen" id="pinScreen">
-    <div style="font-size:2rem">🔒</div>
-    <h1 style="font-size:1.2rem">Lien sécurisé</h1>
-    <p style="color:var(--text2);font-size:.85rem">Entrez le code PIN pour accéder au partage</p>
-    <div class="pin-display" id="pinDisplay">
-      <div class="pin-digit" id="pd0">—</div>
-      <div class="pin-digit" id="pd1">—</div>
-      <div class="pin-digit" id="pd2">—</div>
-      <div class="pin-digit" id="pd3">—</div>
-    </div>
-    <div class="pin-error" id="pinError" style="opacity:0">Code incorrect</div>
-    <div class="pin-keypad">
-      <button class="pin-key" onclick="pinInput('1')">1</button>
-      <button class="pin-key" onclick="pinInput('2')">2</button>
-      <button class="pin-key" onclick="pinInput('3')">3</button>
-      <button class="pin-key" onclick="pinInput('4')">4</button>
-      <button class="pin-key" onclick="pinInput('5')">5</button>
-      <button class="pin-key" onclick="pinInput('6')">6</button>
-      <button class="pin-key" onclick="pinInput('7')">7</button>
-      <button class="pin-key" onclick="pinInput('8')">8</button>
-      <button class="pin-key" onclick="pinInput('9')">9</button>
-      <button class="pin-key del" onclick="pinDelete()">⌫</button>
-      <button class="pin-key" onclick="pinInput('0')">0</button>
-      <button class="pin-key" onclick="pinClear()" style="font-size:.75rem;color:var(--text2)">C</button>
+<div class="perm-screen" id="permScreen">
+  <div style="font-size:3rem">🔒</div>
+  <h2>Accès à la position refusé</h2>
+  <p>Autorisez la géolocalisation dans votre navigateur :</p>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><span>Appuyez sur 🔒 dans la barre d'adresse</span></div>
+    <div class="step"><div class="step-num">2</div><span>Allez dans <strong>Autorisations → Position</strong></span></div>
+    <div class="step"><div class="step-num">3</div><span>Sélectionnez <strong>Autoriser</strong></span></div>
+    <div class="step"><div class="step-num">4</div><span>Rechargez la page</span></div>
+  </div>
+  <button class="btn-reload" onclick="location.reload()">🔄 Réessayer</button>
+</div>
+
+<div class="app-layout">
+  <div class="header">
+    <div class="logo"><div class="logo-dot"></div>TrackTeam</div>
+    <div class="emp-badge">
+      <div class="avatar" id="avatarEl">??</div>
+      <div class="emp-info">
+        <div class="emp-name" id="empNameEl">Chargement...</div>
+        <div class="emp-code" id="empCodeEl">Code : —</div>
+      </div>
     </div>
   </div>
 
-  <!-- Écran expiré -->
-  <div id="expiredScreen" style="display:none;text-align:center;padding:20px 0">
-    <div style="font-size:3rem;margin-bottom:16px">⏱</div>
-    <h1 style="font-size:1.2rem;margin-bottom:8px;color:var(--danger)">Lien expiré</h1>
-    <p style="color:var(--text2);font-size:.85rem">Ce lien de partage n'est plus valide.<br>Demandez un nouveau lien à votre patron.</p>
-  </div>
+  <div id="map"></div>
 
-  <!-- Écran principal -->
-  <div class="main-screen" id="mainScreen" style="display:none">
-    <div class="avatar" id="avatarEl">??</div>
-    <h1 id="empNameEl">Chargement...</h1>
-    <p class="subtitle" id="companyEl">Entreprise</p>
-
-    <div class="status-ring" id="statusRing">
-      <span class="status-icon" id="statusIcon">📍</span>
-    </div>
-
-    <div class="status-text" id="statusText">Prêt à partager</div>
-
-    <div class="coords" id="coordsBox">
-      <div class="coord-row"><span class="coord-label">Latitude</span><span class="coord-val" id="coordLat">—</span></div>
-      <div class="coord-row"><span class="coord-label">Longitude</span><span class="coord-val" id="coordLng">—</span></div>
-      <div class="coord-row"><span class="coord-label">Précision</span><span class="coord-val" id="coordAcc">—</span></div>
-    </div>
-
-    <!-- Bannière arrière-plan actif -->
+  <div class="bottom-panel">
     <div class="bg-banner" id="bgBanner">
-      🟢 <strong>Partage actif en arrière-plan</strong><br>
-      Ne fermez pas complètement le navigateur.<br>
-      Vous pouvez minimiser la fenêtre ou changer d'app.
+      <span>🟢</span>
+      <span>Partage actif en arrière-plan. Ne fermez pas le navigateur. Vous pouvez minimiser la fenêtre ou changer d'app.</span>
     </div>
-
     <div class="error-msg" id="errorMsg"></div>
-
-    <button class="btn-main btn-start" id="btnStart" onclick="startTracking()">
-      📍 Démarrer le partage
-    </button>
-    <button class="btn-main btn-stop" id="btnStop" onclick="stopTracking()">
-      ⏹ Arrêter le partage
-    </button>
-
-    <div class="update-counter" id="updateCounter" style="display:none">
-      Positions envoyées : <span id="updateCount">0</span>
+    <div class="status-row">
+      <div class="status-pill" id="statusPill">
+        <div class="status-dot-anim" id="statusDot"></div>
+        <span id="statusText">Prêt à partager</span>
+      </div>
+      <div class="update-info" id="updateInfo">Positions envoyées : <span id="updateCount">0</span></div>
     </div>
-
-    <div class="info-box">
-      <strong>Arrière-plan activé</strong><br>
-      Une fois démarré, vous pouvez minimiser le navigateur — le partage continue.<br>
-      <strong>Ne fermez pas complètement</strong> le navigateur pour maintenir le partage.
+    <div class="coords-row" id="coordsRow" style="display:none">
+      <div class="coord-card"><div class="coord-label">Latitude</div><div class="coord-val" id="coordLat">—</div></div>
+      <div class="coord-card"><div class="coord-label">Longitude</div><div class="coord-val" id="coordLng">—</div></div>
+      <div class="coord-card"><div class="coord-label">Précision</div><div class="coord-val" id="coordAcc">—</div></div>
     </div>
-  </div>
-
-  <!-- Écran permission refusée -->
-  <div class="perm-screen" id="permScreen">
-    <div style="font-size:3rem;margin-bottom:16px">🔒</div>
-    <h1 style="font-size:1.2rem;margin-bottom:8px">Accès refusé</h1>
-    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">Autorisez la géolocalisation :</p>
-    <div class="permission-steps">
-      <div class="step"><div class="step-num">1</div><span>Appuyez sur l'icône 🔒 dans la barre d'adresse</span></div>
-      <div class="step"><div class="step-num">2</div><span><strong>Autorisations</strong> → <strong>Position</strong> → <strong>Autoriser</strong></span></div>
-      <div class="step"><div class="step-num">3</div><span>Rechargez la page</span></div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="btnStart" onclick="startTracking()">📍 Démarrer le partage</button>
+      <button class="btn btn-stop" id="btnStop" onclick="stopTracking()">⏹ Arrêter le partage</button>
+      <button class="btn-center" onclick="centerMap()" title="Centrer">🎯</button>
     </div>
-    <button class="btn-main btn-start" onclick="location.reload()">🔄 Réessayer</button>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  PARAMS URL
-// ══════════════════════════════════════════════
 const params = new URLSearchParams(window.location.search);
-const companyCode = params.get('company') || 'DEMO';
-const empId       = params.get('emp')     || 'emp_test';
-const empName     = decodeURIComponent(params.get('name') || 'Employé');
-const requiredPin = params.get('pin')     || null;
-const expiresAt   = parseInt(params.get('expires') || '0');
+const companyCode = params.get('company')||'DEMO';
+const empId = params.get('emp')||'emp_test';
+const empName = decodeURIComponent(params.get('name')||'Employé');
+const empPin = params.get('pin')||null;
+const empExpires = parseInt(params.get('expires')||'0');
 
-let watchId = null;
-let updateCount = 0;
-let db, _ref, _update, _onDisconnect, _set;
-let tracking = false;
-let trailPoints = [];
-let wakeLock = null;
-let bgInterval = null;
-let pinBuffer = '';
-
-// ══════════════════════════════════════════════
-//  VÉRIFICATION EXPIRATION & PIN
-// ══════════════════════════════════════════════
-function initScreen() {
-  // Vérifier expiration
-  if (expiresAt > 0 && Date.now() > expiresAt) {
-    document.getElementById('expiredScreen').style.display = 'block';
-    return;
-  }
-
-  // Vérifier PIN
-  if (requiredPin) {
-    document.getElementById('pinScreen').classList.add('show');
-    return;
-  }
-
-  showMainScreen();
+// Expiration
+if (empExpires>0 && Date.now()>empExpires) {
+  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c10;color:#e8ecf0;font-family:DM Sans,sans-serif;text-align:center;padding:32px"><div style="font-size:3rem">⏰</div><div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800;color:#ff4757">Lien expiré</div><div style="color:#7a8494;font-size:.85rem">Ce lien n\'est plus valide.<br>Demandez un nouveau lien à votre patron.</div></div>';
 }
 
-function showMainScreen() {
-  document.getElementById('mainScreen').style.display = 'block';
-  document.getElementById('empNameEl').textContent = empName;
-  document.getElementById('companyEl').textContent = 'Code : ' + companyCode;
-  const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-  document.getElementById('avatarEl').textContent = initials || '??';
+// PIN
+let pinBuffer='', pinUnlocked=!empPin;
+if(empPin) document.getElementById('pinOverlay').classList.add('show');
+function pinInput(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDisplay();if(pinBuffer.length===4)setTimeout(verifyPin,150);}
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDisplay();}
+function pinClear(){pinBuffer='';updatePinDisplay();}
+function updatePinDisplay(){for(let i=0;i<4;i++){const el=document.getElementById('pd'+i);el.textContent=i<pinBuffer.length?'●':'—';el.classList.toggle('filled',i<pinBuffer.length);}}
+function verifyPin(){
+  if(pinBuffer===empPin){document.getElementById('pinOverlay').classList.remove('show');pinUnlocked=true;}
+  else{document.getElementById('pinError').textContent='Code incorrect';pinBuffer='';updatePinDisplay();setTimeout(()=>document.getElementById('pinError').textContent='',2000);}
 }
 
-// ══════════════════════════════════════════════
-//  PIN
-// ══════════════════════════════════════════════
-function pinInput(digit) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += digit;
-  updatePinDisplay();
-  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
-}
+// UI init
+document.getElementById('empNameEl').textContent=empName;
+document.getElementById('empCodeEl').textContent='Code : '+companyCode;
+const initials=empName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('avatarEl').textContent=initials||'??';
 
-function pinDelete() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay(); }
-function pinClear()  { pinBuffer = ''; updatePinDisplay(); }
+// MAP
+let map, myMarker=null, myCircle=null, lastLat=null, lastLng=null;
 
-function updatePinDisplay() {
-  for (let i = 0; i < 4; i++) {
-    const el = document.getElementById('pd' + i);
-    if (i < pinBuffer.length) { el.textContent = '●'; el.classList.add('filled'); }
-    else { el.textContent = '—'; el.classList.remove('filled'); }
-  }
-}
-
-function verifyPin() {
-  if (pinBuffer === requiredPin) {
-    document.getElementById('pinScreen').classList.remove('show');
-    showMainScreen();
-  } else {
-    const errEl = document.getElementById('pinError');
-    errEl.style.opacity = '1';
-    errEl.style.animation = 'shake .3s';
-    setTimeout(() => { errEl.style.opacity = '0'; errEl.style.animation = 'none'; }, 1500);
-    pinBuffer = ''; updatePinDisplay();
-  }
-}
-
-// ══════════════════════════════════════════════
-//  FIREBASE
-// ══════════════════════════════════════════════
-window.addEventListener('firebaseReady', () => {
-  db = window._db; _ref = window._ref;
-  _update = window._update; _onDisconnect = window._onDisconnect; _set = window._set;
-});
-
-// ══════════════════════════════════════════════
-//  SERVICE WORKER — arrière-plan
-// ══════════════════════════════════════════════
-function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-
-  // Inline service worker via blob URL
-  const swCode = `
-    const CACHE = 'trackteam-v1';
-    self.addEventListener('install', e => { self.skipWaiting(); });
-    self.addEventListener('activate', e => { clients.claim(); });
-
-    // Garder le SW actif avec un ping périodique
-    self.addEventListener('message', e => {
-      if (e.data === 'ping') {
-        // SW actif — répond pour confirmer
-        e.source && e.source.postMessage('pong');
-      }
-    });
-
-    // Notification persistante de partage actif
-    self.addEventListener('message', e => {
-      if (e.data && e.data.type === 'SHOW_NOTIF') {
-        self.registration.showNotification('TrackTeam — Partage actif', {
-          body: e.data.text || 'Votre position est partagée en direct',
-          icon: 'https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=trackteam',
-          tag: 'trackteam-bg',
-          renotify: false,
-          requireInteraction: true,
-          silent: true,
-          actions: [{ action: 'stop', title: 'Arrêter' }]
-        });
-      }
-      if (e.data && e.data.type === 'HIDE_NOTIF') {
-        self.registration.getNotifications({ tag: 'trackteam-bg' })
-          .then(notifs => notifs.forEach(n => n.close()));
-      }
-    });
-
-    self.addEventListener('notificationclick', e => {
-      if (e.action === 'stop') {
-        e.notification.close();
-        clients.matchAll().then(cls => cls.forEach(c => c.postMessage('STOP_TRACKING')));
-      } else {
-        e.notification.close();
-        clients.openWindow(self.location.origin);
-      }
-    });
-
-    // Fetch cache-first pour les assets
-    self.addEventListener('fetch', e => {
-      e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-    });
-  `;
-
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-
-  navigator.serviceWorker.register(swUrl, { scope: '/' })
-    .then(reg => {
-      window._swReg = reg;
-      console.log('SW enregistré');
-    })
-    .catch(err => {
-      // Fallback : essayer SW depuis fichier si blob échoue (GitHub Pages)
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
-
-  // Écouter les messages du SW
-  navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data === 'STOP_TRACKING') stopTracking();
-  });
-}
-
-function sendSwNotif(text) {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then(reg => {
-    if (reg.active) reg.active.postMessage({ type: 'SHOW_NOTIF', text });
-  });
-}
-
-function hideSwNotif() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.ready.then(reg => {
-    if (reg.active) reg.active.postMessage({ type: 'HIDE_NOTIF' });
-  });
-}
-
-// ══════════════════════════════════════════════
-//  WAKE LOCK
-// ══════════════════════════════════════════════
-async function acquireWakeLock() {
-  if (!('wakeLock' in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', () => {
-      // Réacquérir si toujours en tracking (page redevenue visible)
-      if (tracking) setTimeout(acquireWakeLock, 1000);
-    });
-  } catch (e) { console.warn('WakeLock échoué:', e); }
-}
-
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
-}
-
-// Réacquérir wake lock quand la page redevient visible
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && tracking) {
-    acquireWakeLock();
-  }
-});
-
-// ══════════════════════════════════════════════
-//  TRACKING
-// ══════════════════════════════════════════════
-function startTracking() {
-  if (!navigator.geolocation) {
-    showError('La géolocalisation n\'est pas supportée.');
-    return;
-  }
-
-  // Demander permission notification
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-
-  setStatus('requesting');
-
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      setStatus('active');
-      document.getElementById('btnStart').style.display = 'none';
-      document.getElementById('btnStop').style.display = 'block';
-      document.getElementById('updateCounter').style.display = 'block';
-      document.getElementById('bgBanner').classList.add('show');
-      tracking = true;
-
-      // Wake Lock — garder écran/CPU actif
-      acquireWakeLock();
-
-      // Notification persistante arrière-plan
-      sendSwNotif(`${empName} — Position partagée en direct`);
-
-      sendPosition(pos);
-
-      // watchPosition — déclenché par le GPS natif
-      watchId = navigator.geolocation.watchPosition(
-        sendPosition,
-        handleGeoError,
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
-      );
-
-      // Interval de secours toutes les 15s si watchPosition silencieux
-      bgInterval = setInterval(() => {
-        if (!tracking) return;
-        navigator.geolocation.getCurrentPosition(
-          sendPosition,
-          () => {},
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-        );
-      }, 15000);
-
-      // Marquer hors ligne si fermeture navigateur
-      if (db) {
-        const empRef = _ref(db, `companies/${companyCode}/employees/${empId}`);
-        _onDisconnect(empRef).update({ online: false });
-      }
-
-      // Ping SW toutes les 30s pour le garder actif
-      setInterval(() => {
-        if (!tracking) return;
-        navigator.serviceWorker.ready.then(reg => {
-          if (reg.active) reg.active.postMessage('ping');
-        }).catch(() => {});
-      }, 30000);
-    },
-    handleGeoError,
-    { enableHighAccuracy: true, timeout: 15000 }
-  );
-}
-
-function stopTracking() {
-  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-  if (bgInterval) { clearInterval(bgInterval); bgInterval = null; }
-  tracking = false;
-
-  releaseWakeLock();
-  hideSwNotif();
-
-  setStatus('stopped');
-  document.getElementById('bgBanner').classList.remove('show');
-
-  if (db) {
-    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
-  }
-
-  document.getElementById('btnStart').style.display = 'block';
-  document.getElementById('btnStop').style.display = 'none';
-}
-
-function sendPosition(pos) {
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
-  const acc = Math.round(pos.coords.accuracy);
-  const ts  = Date.now();
-
-  trailPoints.push({ lat, lng, ts });
-  if (trailPoints.length > 50) trailPoints.shift();
-
-  document.getElementById('coordsBox').classList.add('show');
-  document.getElementById('coordLat').textContent = lat.toFixed(6);
-  document.getElementById('coordLng').textContent = lng.toFixed(6);
-  document.getElementById('coordAcc').textContent = `± ${acc} m`;
-  updateCount++;
-  document.getElementById('updateCount').textContent = updateCount;
-
-  // Mettre à jour la notification avec les coords
-  sendSwNotif(`${empName} — 📍 ${lat.toFixed(4)}, ${lng.toFixed(4)} (±${acc}m)`);
-
-  if (db) {
-    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
-      lat, lng, online: true, lastSeen: ts, accuracy: acc, trail: trailPoints
-    });
-  }
-}
-
-function handleGeoError(err) {
-  if (err.code === err.PERMISSION_DENIED) {
-    document.getElementById('mainScreen').style.display = 'none';
-    document.getElementById('permScreen').classList.add('show');
-  } else if (err.code === err.POSITION_UNAVAILABLE) {
-    showError('Position indisponible. Activez le GPS.');
-    setStatus('error');
-  } else if (err.code === err.TIMEOUT) {
-    // Timeout = réessayer silencieusement
-    if (tracking) {
-      navigator.geolocation.getCurrentPosition(sendPosition, () => {}, { enableHighAccuracy: false, timeout: 20000 });
-    }
-  }
-}
-
-// ══════════════════════════════════════════════
-//  UI
-// ══════════════════════════════════════════════
-function setStatus(state) {
-  const ring = document.getElementById('statusRing');
-  const icon = document.getElementById('statusIcon');
-  const text = document.getElementById('statusText');
-  ring.className = 'status-ring';
-  text.className = 'status-text';
-
-  const states = {
-    requesting: ['⏳', 'Obtention de la position...', 'orange'],
-    active:     ['✅', 'Position partagée en direct', 'green', true],
-    stopped:    ['⏹', 'Partage arrêté', 'red'],
-    error:      ['❌', 'Erreur GPS', 'red'],
-    default:    ['📍', 'Prêt à partager', '']
+function initMap(){
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([6.137,1.222],6);
+  const sat=L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']});
+  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  sat.addTo(map);
+  let isSat=true;
+  const tb=L.control({position:'bottomright'});
+  tb.onAdd=function(){
+    const b=L.DomUtil.create('button');
+    b.innerHTML='🗺 Plan';
+    b.style.cssText='background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 12px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);margin-bottom:8px';
+    b.onclick=function(e){L.DomEvent.stopPropagation(e);if(isSat){map.removeLayer(sat);osm.addTo(map);b.innerHTML='🛰 Satellite';isSat=false;}else{map.removeLayer(osm);sat.addTo(map);b.innerHTML='🗺 Plan';isSat=true;}};
+    return b;
   };
-  const [ic, tx, cl, active] = states[state] || states.default;
-  icon.textContent = ic;
-  text.textContent = tx;
-  if (cl) text.classList.add(cl);
-  if (active) ring.classList.add('active');
+  tb.addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
 }
 
-function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 6000);
+function updateMapMarker(lat,lng,acc){
+  const ll=[lat,lng];
+  const icon=L.divIcon({className:'',html:`<div style="position:relative;width:40px;height:40px"><div style="position:absolute;inset:0;background:rgba(0,229,160,.25);border-radius:50%;animation:markerPulse 2s infinite ease-out"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:#00e5a0;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,229,160,.5)"></div></div>`,iconSize:[40,40],iconAnchor:[20,20]});
+  if(myMarker){myMarker.setLatLng(ll);}
+  else{myMarker=L.marker(ll,{icon}).addTo(map);myMarker.bindPopup(`<b>${empName}</b><br>Ma position`);}
+  if(myCircle){myCircle.setLatLng(ll).setRadius(acc);}
+  else{myCircle=L.circle(ll,{radius:acc,color:'#00e5a0',fillColor:'#00e5a0',fillOpacity:.1,weight:1.5}).addTo(map);}
 }
 
-// ══════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════
-registerServiceWorker();
-initScreen();
+function centerMap(){if(lastLat!==null)map.flyTo([lastLat,lastLng],17,{duration:1});}
+
+// Firebase
+let db,_ref,_update,_onDisconnect;
+window.addEventListener('firebaseReady',()=>{db=window._db;_ref=window._ref;_update=window._update;_onDisconnect=window._onDisconnect;});
+
+// TRACKING
+let watchId=null,updateCount=0,trailPoints=[],tracking=false;
+
+function startTracking(){
+  if(!pinUnlocked)return;
+  if(!navigator.geolocation){showError('Géolocalisation non supportée.');return;}
+  setStatus('requesting');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    setStatus('active');
+    document.getElementById('btnStart').style.display='none';
+    document.getElementById('btnStop').style.display='flex';
+    document.getElementById('updateInfo').style.display='block';
+    document.getElementById('bgBanner').classList.add('show');
+    document.getElementById('coordsRow').style.display='grid';
+    tracking=true;
+    onPosition(pos);
+    watchId=navigator.geolocation.watchPosition(onPosition,onGeoError,{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+    if(db)_onDisconnect(_ref(db,`companies/${companyCode}/employees/${empId}`)).update({online:false});
+    if('wakeLock' in navigator)navigator.wakeLock.request('screen').catch(()=>{});
+  },onGeoError,{enableHighAccuracy:true,timeout:15000});
+}
+
+function stopTracking(){
+  if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  tracking=false;setStatus('stopped');
+  document.getElementById('btnStart').style.display='flex';
+  document.getElementById('btnStop').style.display='none';
+  document.getElementById('bgBanner').classList.remove('show');
+  if(db)_update(_ref(db,`companies/${companyCode}/employees/${empId}`),{online:false});
+}
+
+function onPosition(pos){
+  const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=Math.round(pos.coords.accuracy),ts=Date.now();
+  lastLat=lat;lastLng=lng;
+  trailPoints.push({lat,lng,ts});
+  if(trailPoints.length>50)trailPoints.shift();
+  document.getElementById('coordLat').textContent=lat.toFixed(5);
+  document.getElementById('coordLng').textContent=lng.toFixed(5);
+  document.getElementById('coordAcc').textContent='± '+acc+' m';
+  updateCount++;document.getElementById('updateCount').textContent=updateCount;
+  updateMapMarker(lat,lng,acc);
+  if(updateCount===1)map.flyTo([lat,lng],16,{duration:1.5});
+  if(db)_update(_ref(db,`companies/${companyCode}/employees/${empId}`),{lat,lng,online:true,lastSeen:ts,accuracy:acc,trail:trailPoints});
+}
+
+function onGeoError(err){
+  if(err.code===1){document.getElementById('permScreen').classList.add('show');}
+  else if(err.code===2){showError('GPS indisponible. Activez la localisation.');setStatus('error');}
+  else{showError('Délai dépassé. Vérifiez votre GPS.');setStatus('error');}
+}
+
+function setStatus(state){
+  const pill=document.getElementById('statusPill'),dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
+  pill.className='status-pill';dot.className='status-dot-anim';
+  const s={requesting:['','','Obtention de la position...'],active:['active','active','Position partagée en direct'],stopped:['error','error','Partage arrêté'],error:['error','error','Erreur de géolocalisation']};
+  const[pc,dc,lb]=s[state]||['','','Prêt à partager'];
+  if(pc)pill.classList.add(pc);if(dc)dot.classList.add(dc);txt.textContent=lb;
+}
+
+function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),5000);}
+
+initMap();
 </script>
 </body>
 </html>

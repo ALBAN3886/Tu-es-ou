@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrackTeam — Télécharger l'application</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10;--surface:#111318;--surface2:#181c24;--border:#1e2330;
+  --accent:#00e5a0;--accent2:#0099ff;--danger:#ff4757;--warn:#ffa502;
+  --text:#e8ecf0;--text2:#7a8494;--text3:#4a5266;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 32px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;text-decoration:none;color:var(--text);}
+.logo-dot{width:10px;height:10px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 8px rgba(0,229,160,0)}}
+.nav-links{display:flex;gap:8px;}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;}
+.nav-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.nav-btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.nav-btn-accent{background:var(--accent);color:#0a0c10;}
+.nav-btn-accent:hover{background:#00c988;}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;padding:80px 24px 60px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,229,160,.1) 0%,transparent 65%);
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);
+  border-radius:20px;padding:6px 14px;
+  font-size:.8rem;color:var(--accent);font-weight:600;
+  margin-bottom:24px;
+}
+.hero h1{
+  font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:800;
+  line-height:1.15;margin-bottom:16px;
+  background:linear-gradient(135deg,#fff 0%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{color:var(--text2);font-size:1.05rem;max-width:520px;margin:0 auto 40px;line-height:1.7;}
+
+/* ── DOWNLOAD CARDS ── */
+.download-section{max-width:900px;margin:0 auto;padding:0 24px 80px;}
+
+.section-title{
+  font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);
+  text-align:center;margin-bottom:32px;
+}
+
+.download-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-bottom:48px;}
+
+.download-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:28px;
+  display:flex;flex-direction:column;gap:16px;
+  transition:border-color .2s,transform .2s;
+  position:relative;overflow:hidden;
+}
+.download-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.download-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+.download-card:hover::before{opacity:1;}
+.download-card.featured{border-color:rgba(0,229,160,.3);}
+.download-card.featured::before{opacity:1;}
+
+.card-platform{display:flex;align-items:center;gap:12px;}
+.platform-icon{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;flex-shrink:0;
+}
+.icon-android{background:linear-gradient(135deg,#00e5a0 0%,#00c988 100%);}
+.icon-ios{background:linear-gradient(135deg,#333 0%,#555 100%);}
+.icon-web{background:linear-gradient(135deg,#0099ff 0%,#0077cc 100%);}
+
+.platform-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;}
+.platform-sub{font-size:.78rem;color:var(--text2);}
+
+.card-desc{font-size:.85rem;color:var(--text2);line-height:1.6;flex:1;}
+
+.version-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:4px 10px;font-size:.75rem;color:var(--text2);
+}
+.version-tag span{color:var(--accent);font-weight:600;}
+
+.btn-download{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 20px;border-radius:10px;border:none;
+  font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;
+  cursor:pointer;transition:all .2s;text-decoration:none;
+  width:100%;
+}
+.btn-android{background:var(--accent);color:#0a0c10;}
+.btn-android:hover{background:#00c988;box-shadow:0 6px 24px rgba(0,229,160,.3);}
+.btn-ios{background:var(--surface2);border:1px solid var(--border);color:var(--text2);}
+.btn-web{background:var(--accent2);color:#fff;}
+.btn-web:hover{background:#007acc;box-shadow:0 6px 24px rgba(0,153,255,.3);}
+
+.coming-soon-badge{
+  position:absolute;top:14px;right:14px;
+  background:rgba(255,165,2,.15);border:1px solid rgba(255,165,2,.3);
+  border-radius:6px;padding:3px 8px;
+  font-size:.7rem;color:var(--warn);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.new-badge{
+  position:absolute;top:14px;right:14px;
+  background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.3);
+  border-radius:6px;padding:3px 8px;
+  font-size:.7rem;color:var(--accent);font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+
+/* ── APK INSTALL GUIDE ── */
+.guide-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:28px;margin-bottom:48px;
+}
+.guide-section h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:20px;}
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+.step-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+.step-num{
+  width:32px;height:32px;background:var(--accent);color:#0a0c10;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;flex-shrink:0;
+}
+.step-title{font-weight:700;font-size:.9rem;}
+.step-desc{font-size:.8rem;color:var(--text2);line-height:1.5;}
+
+/* ── FEATURES ── */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:48px;}
+.feature-item{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:16px;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.feature-icon{font-size:1.4rem;flex-shrink:0;margin-top:2px;}
+.feature-title{font-weight:700;font-size:.88rem;margin-bottom:3px;}
+.feature-desc{font-size:.78rem;color:var(--text2);line-height:1.5;}
+
+/* ── FAQ ── */
+.faq-section{margin-bottom:60px;}
+.faq-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:8px;overflow:hidden;
+}
+.faq-q{
+  padding:16px 20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  font-weight:600;font-size:.9rem;
+}
+.faq-q:hover{background:var(--surface2);}
+.faq-arrow{color:var(--text2);transition:transform .2s;font-size:.8rem;}
+.faq-item.open .faq-arrow{transform:rotate(180deg);}
+.faq-a{
+  padding:0 20px;max-height:0;overflow:hidden;
+  transition:max-height .3s,padding .3s;
+  font-size:.85rem;color:var(--text2);line-height:1.6;
+}
+.faq-item.open .faq-a{max-height:200px;padding:0 20px 16px;}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:24px 32px;text-align:center;
+  color:var(--text3);font-size:.82rem;
+}
+footer a{color:var(--text2);text-decoration:none;}
+footer a:hover{color:var(--accent);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  header{padding:14px 16px;}
+  .hero{padding:50px 16px 40px;}
+  .download-section{padding:0 16px 50px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">
+    <div class="logo-dot"></div>
+    TrackTeam
+  </a>
+  <div class="nav-links">
+    <a class="nav-btn nav-btn-outline" href="index.html">🗺 Dashboard</a>
+    <a class="nav-btn nav-btn-accent" href="#download">⬇ Télécharger</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">📱 Application Mobile Disponible</div>
+  <h1>Géolocalisez votre<br>équipe en temps réel</h1>
+  <p>Téléchargez l'application TrackTeam sur votre appareil pour suivre vos employés sur le terrain, recevoir des alertes et naviguer vers eux instantanément.</p>
+  <a href="#download" class="nav-btn nav-btn-accent" style="display:inline-flex;padding:14px 28px;font-size:1rem">
+    ⬇ Voir les téléchargements
+  </a>
+</div>
+
+<div class="download-section">
+
+  <!-- FEATURES -->
+  <div class="section-title" style="margin-bottom:20px">Ce que vous obtenez</div>
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-icon">📍</div>
+      <div><div class="feature-title">Position en temps réel</div><div class="feature-desc">Mise à jour toutes les 10 secondes sur une carte satellite.</div></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🗺</div>
+      <div><div class="feature-title">Carte satellite</div><div class="feature-desc">Vue satellite Google Maps + vue plan OpenStreetMap.</div></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔔</div>
+      <div><div class="feature-title">Alertes de zone</div><div class="feature-desc">Notification instantanée si un employé sort de la zone définie.</div></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📊</div>
+      <div><div class="feature-title">Historique des trajets</div><div class="feature-desc">Visualisez le parcours de chaque employé sur la journée.</div></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔒</div>
+      <div><div class="feature-title">Sécurité PIN</div><div class="feature-desc">Dashboard protégé par code PIN. Liens avec expiration optionnelle.</div></div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🧭</div>
+      <div><div class="feature-title">Navigation intégrée</div><div class="feature-desc">Ouvrez Google Maps, Waze ou OSM directement vers l'employé.</div></div>
+    </div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div id="download" class="section-title">Téléchargements</div>
+  <div class="download-grid">
+
+    <!-- ANDROID APK -->
+    <div class="download-card featured">
+      <div class="new-badge">Nouveau</div>
+      <div class="card-platform">
+        <div class="platform-icon icon-android">🤖</div>
+        <div>
+          <div class="platform-name">Android</div>
+          <div class="platform-sub">APK direct — Android 6.0+</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Installez l'application native TrackTeam sur votre téléphone Android.
+        Fonctionne en arrière-plan, économise la batterie, notifications push incluses.
+      </div>
+      <div class="version-tag">Version <span id="apkVersion">1.0.0</span> · <span id="apkSize">~8 MB</span></div>
+      <!-- Remplace href par le vrai lien de ton APK sur GitHub ou Google Drive -->
+      <a class="btn-download btn-android" href="trackteam.apk" download id="apkDownloadBtn">
+        ⬇ Télécharger l'APK Android
+      </a>
+    </div>
+
+    <!-- IOS -->
+    <div class="download-card">
+      <div class="coming-soon-badge">Bientôt</div>
+      <div class="card-platform">
+        <div class="platform-icon icon-ios">🍎</div>
+        <div>
+          <div class="platform-name">iPhone / iOS</div>
+          <div class="platform-sub">App Store — iOS 14+</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        L'application iOS est en cours de développement.
+        En attendant, utilisez la version Web depuis Safari — elle fonctionne parfaitement.
+      </div>
+      <div class="version-tag">En développement</div>
+      <button class="btn-download btn-ios" disabled style="cursor:not-allowed;opacity:.5">
+        🔔 Me notifier à la sortie
+      </button>
+    </div>
+
+    <!-- WEB APP -->
+    <div class="download-card">
+      <div class="card-platform">
+        <div class="platform-icon icon-web">🌐</div>
+        <div>
+          <div class="platform-name">Version Web</div>
+          <div class="platform-sub">Tous les appareils — Navigateur</div>
+        </div>
+      </div>
+      <div class="card-desc">
+        Utilisez TrackTeam directement depuis votre navigateur. Aucune installation requise.
+        Compatible Android, iPhone, PC, tablette.
+      </div>
+      <div class="version-tag">Toujours à jour · <span style="color:var(--accent)">Gratuit</span></div>
+      <a class="btn-download btn-web" href="index.html">
+        🚀 Ouvrir le Dashboard Web
+      </a>
+    </div>
+
+  </div>
+
+  <!-- GUIDE INSTALLATION APK -->
+  <div class="guide-section">
+    <h3>📋 Comment installer l'APK Android (3 étapes)</h3>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Téléchargez l'APK</div>
+          <div class="step-desc">Appuyez sur le bouton vert ci-dessus. Le fichier <code style="background:var(--surface2);padding:2px 5px;border-radius:4px;font-size:.8em">trackteam.apk</code> sera téléchargé dans votre dossier Téléchargements.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Autorisez les sources inconnues</div>
+          <div class="step-desc">Allez dans <strong>Paramètres → Sécurité → Sources inconnues</strong> et activez l'option. Sur Android 8+, l'autorisation est demandée automatiquement à l'installation.</div>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Installez et lancez</div>
+          <div class="step-desc">Ouvrez le fichier APK téléchargé, appuyez sur <strong>Installer</strong>. L'application apparaît dans votre liste d'apps. Lancez-la et connectez-vous avec votre code entreprise.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="section-title">Questions fréquentes</div>
+  <div class="faq-section">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>L'application est-elle gratuite ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">Oui, TrackTeam est entièrement gratuit. Aucun abonnement, aucune limite d'employés.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>L'APK est-il sécurisé ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">L'APK est généré à partir du même code source que la version web. Les données sont stockées dans Firebase (Google) avec chiffrement en transit. Aucune donnée n'est partagée avec des tiers.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Combien d'employés peut-on suivre simultanément ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">Il n'y a pas de limite technique. Vous pouvez suivre autant d'employés que nécessaire. Les performances dépendent de votre connexion internet.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>L'employé peut-il voir ma position ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">Non. L'employé voit uniquement sa propre position sur sa carte. Seul le patron (dashboard) voit la position de tous les employés.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Ça fonctionne sans internet ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">Non, une connexion internet (WiFi ou données mobiles) est nécessaire pour envoyer les positions en temps réel vers Firebase.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>L'employé peut-il arrêter le partage ?</span>
+        <span class="faq-arrow">▼</span>
+      </div>
+      <div class="faq-a">Oui, l'employé peut appuyer sur "Arrêter le partage" à tout moment depuis son écran. Le patron le verra passer en statut "Hors ligne".</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2025 TrackTeam · Propulsé par <strong style="color:var(--text)">AET — Alban Eloh Technology</strong></p>
+  <p style="margin-top:6px"><a href="index.html">Dashboard</a> · <a href="tracker.html">Page employé</a></p>
+</footer>
+
+<script>
+function toggleFaq(el) {
+  const item = el.parentElement;
+  item.classList.toggle('open');
+}
+
+// Détecter si l'utilisateur est sur Android pour mettre en avant l'APK
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
+if (isAndroid) {
+  document.getElementById('apkDownloadBtn').textContent = '⬇ Télécharger l\'APK';
+  document.getElementById('apkDownloadBtn').style.boxShadow = '0 0 30px rgba(0,229,160,.3)';
+}
+</script>
+</body>
+</html>
