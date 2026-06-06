@@ -846,7 +846,11 @@ function closeNavModal(){
 
 // ── OSRM routing ──
 async function fetchOSRMRoute(fromLat,fromLng,toLat,toLng){
+  // Valider avant l'appel (évite OSRM 400)
+  if(!fromLat||!fromLng||!toLat||!toLng) throw new Error('Coordonnées manquantes');
+  if(isNaN(fromLat)||isNaN(fromLng)||isNaN(toLat)||isNaN(toLng)) throw new Error('Coordonnées invalides');
   const profile=(selectedTransport==='walk')?'foot':(selectedTransport==='bike')?'cycling':'car';
+  // Note : &language=fr non supporté par OSRM demo (cause erreur 400)
   const url=`https://router.project-osrm.org/route/v1/${profile}/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson&steps=true&annotations=false`;
   const r=await fetch(url);
   if(!r.ok) throw new Error('OSRM '+r.status);
