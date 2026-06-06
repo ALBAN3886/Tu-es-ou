@@ -9,7 +9,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
   authDomain: "mapaet-fc2bb.firebaseapp.com",
@@ -24,6 +24,7 @@ const db = getDatabase(app);
 window._db = db;
 window._ref = ref;
 window._update = update;
+window._onValue = onValue;
 window._onDisconnect = onDisconnect;
 window._firebaseReady = true;
 window.dispatchEvent(new Event('firebaseReady'));
@@ -33,14 +34,13 @@ window.dispatchEvent(new Event('firebaseReady'));
 :root{
   --bg:#0a0c10;--surface:#111318;--surface2:#181c24;
   --border:#1e2330;--accent:#00e5a0;--accent2:#0099ff;
-  --danger:#ff4757;--text:#e8ecf0;--text2:#7a8494;
+  --danger:#ff4757;--warn:#ffa502;--text:#e8ecf0;--text2:#7a8494;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
-
 .app-layout{display:flex;flex-direction:column;height:100vh;}
 
-/* HEADER */
+/* ── HEADER ── */
 .header{
   background:var(--surface);border-bottom:1px solid var(--border);
   padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
@@ -49,67 +49,187 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;}
 .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
-
 .emp-badge{display:flex;align-items:center;gap:8px;}
-.avatar{
-  width:34px;height:34px;
-  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
-  border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;color:#0a0c10;flex-shrink:0;
-}
+.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;color:#0a0c10;flex-shrink:0;}
 .emp-info{display:flex;flex-direction:column;}
 .emp-name{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;line-height:1.2;}
 .emp-code{font-size:.7rem;color:var(--text2);}
 
-/* MAP */
+/* ── MAP ── */
 #map{flex:1;width:100%;min-height:0;}
 
-/* BOTTOM PANEL */
-.bottom-panel{
-  background:var(--surface);border-top:1px solid var(--border);
-  padding:12px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;z-index:100;
+/* ── PATRON BANNER (affiché en haut de la carte quand patron est en ligne) ── */
+.patron-banner{
+  position:absolute;top:12px;left:12px;right:12px;z-index:500;
+  background:rgba(17,19,24,.95);border:1px solid var(--accent2);
+  border-radius:12px;padding:10px 14px;
+  display:none;align-items:center;justify-content:space-between;gap:10px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 4px 20px rgba(0,153,255,.2);
+}
+.patron-banner.show{display:flex;}
+.patron-info{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.patron-avatar{
+  width:36px;height:36px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;flex-shrink:0;border:2px solid rgba(255,255,255,.2);
+}
+.patron-details{display:flex;flex-direction:column;min-width:0;}
+.patron-label{font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.patron-dist{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:800;color:var(--accent2);}
+.patron-eta{font-size:.72rem;color:var(--text2);margin-top:1px;}
+
+.btn-nav-patron{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,#0099ff,#0077cc);
+  color:#fff;border:none;border-radius:10px;
+  padding:9px 14px;font-family:'DM Sans',sans-serif;
+  font-size:.82rem;font-weight:700;cursor:pointer;
+  transition:all .2s;white-space:nowrap;
+  box-shadow:0 4px 14px rgba(0,153,255,.4);
+}
+.btn-nav-patron:active{transform:scale(.96);}
+
+/* ── PATRON OFFLINE NOTICE ── */
+.patron-offline{
+  position:absolute;top:12px;left:12px;right:12px;z-index:500;
+  background:rgba(17,19,24,.9);border:1px solid var(--border);
+  border-radius:10px;padding:8px 14px;
+  display:none;align-items:center;gap:8px;
+  font-size:.78rem;color:var(--text2);
+  backdrop-filter:blur(6px);
+}
+.patron-offline.show{display:flex;}
+
+/* ── NAV MODAL style Google Maps ── */
+.nav-modal{
+  position:fixed;inset:0;z-index:4000;
+  display:none;align-items:flex-end;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+}
+.nav-modal.show{display:flex;}
+.nav-sheet{
+  width:100%;background:var(--surface);
+  border-radius:20px 20px 0 0;
+  padding:0 0 env(safe-area-inset-bottom,20px);
+  animation:slideUp .25s ease;
+  overflow:hidden;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.nav-handle{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 12px;border-bottom:1px solid var(--border);
+}
+.nav-handle h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+.nav-close{background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer;padding:4px;}
+
+.nav-dest{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+}
+.nav-dest-icon{
+  width:44px;height:44px;background:rgba(0,153,255,.15);border:1px solid rgba(0,153,255,.3);
+  border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+}
+.nav-dest-info{display:flex;flex-direction:column;gap:2px;}
+.nav-dest-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;}
+.nav-dest-coords{font-size:.73rem;color:var(--text2);}
+.nav-dest-dist{
+  margin-left:auto;text-align:right;
+  font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--accent2);
+}
+.nav-dest-eta{font-size:.7rem;color:var(--text2);}
+
+/* Mode de transport */
+.transport-section{padding:14px 20px 10px;}
+.transport-label{font-size:.72rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.transport-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.transport-btn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  background:var(--surface2);border:2px solid var(--border);
+  border-radius:12px;padding:10px 6px;cursor:pointer;
+  transition:all .15s;font-size:.72rem;color:var(--text2);font-weight:600;
+}
+.transport-btn:active{transform:scale(.95);}
+.transport-btn.selected{
+  border-color:var(--accent2);background:rgba(0,153,255,.12);color:var(--accent2);
+}
+.transport-btn.moto.selected{border-color:var(--warn);background:rgba(255,165,2,.12);color:var(--warn);}
+.transport-icon{font-size:1.5rem;}
+
+/* Apps de navigation */
+.apps-section{padding:10px 20px 6px;border-top:1px solid var(--border);}
+.apps-label{font-size:.72rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.apps-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.app-btn{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;cursor:pointer;
+  transition:all .15s;text-decoration:none;color:var(--text);
+}
+.app-btn:active{transform:scale(.97);border-color:var(--accent2);}
+.app-btn-icon{font-size:1.4rem;flex-shrink:0;}
+.app-btn-name{font-size:.82rem;font-weight:700;font-family:'Syne',sans-serif;}
+.app-btn-sub{font-size:.68rem;color:var(--text2);}
+
+/* Bouton démarrer principal */
+.btn-start-nav{
+  margin:12px 20px 16px;
+  width:calc(100% - 40px);
+  background:linear-gradient(135deg,#0099ff,#0066cc);
+  color:#fff;border:none;border-radius:14px;
+  padding:15px;font-family:'Syne',sans-serif;
+  font-size:1rem;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 6px 24px rgba(0,153,255,.4);
+  transition:all .2s;
+}
+.btn-start-nav:active{transform:scale(.98);}
+.btn-start-nav.moto{
+  background:linear-gradient(135deg,#ffa502,#e67e00);
+  box-shadow:0 6px 24px rgba(255,165,2,.4);
 }
 
+/* ── BOTTOM PANEL ── */
+.bottom-panel{
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:10px 14px 14px;flex-shrink:0;
+  display:flex;flex-direction:column;gap:9px;z-index:100;
+}
 .bg-banner{
   background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);
-  border-radius:8px;padding:8px 12px;font-size:.77rem;color:var(--accent);
+  border-radius:8px;padding:7px 12px;font-size:.76rem;color:var(--accent);
   display:none;align-items:center;gap:8px;line-height:1.4;
 }
 .bg-banner.show{display:flex;}
-
 .error-msg{
   background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);
-  border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--danger);display:none;
+  border-radius:8px;padding:8px 12px;font-size:.79rem;color:var(--danger);display:none;
 }
 .error-msg.show{display:block;}
-
-.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .status-pill{
   display:flex;align-items:center;gap:7px;
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:20px;padding:6px 12px;font-size:.8rem;transition:all .3s;
+  border-radius:20px;padding:6px 12px;font-size:.79rem;transition:all .3s;
 }
 .status-pill.active{border-color:var(--accent);background:rgba(0,229,160,.08);}
 .status-pill.error{border-color:var(--danger);background:rgba(255,71,87,.08);}
-
 .status-dot-anim{width:8px;height:8px;border-radius:50%;background:var(--text2);flex-shrink:0;}
 .status-dot-anim.active{background:var(--accent);animation:blink 1.5s infinite;}
 .status-dot-anim.error{background:var(--danger);}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-.update-info{text-align:right;font-size:.73rem;color:var(--text2);display:none;}
+.update-info{font-size:.72rem;color:var(--text2);display:none;}
 .update-info span{color:var(--accent);font-weight:700;}
-
 .coords-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
-.coord-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;}
-.coord-label{font-size:.63rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
-.coord-val{font-size:.8rem;font-weight:600;color:var(--text);margin-top:1px;}
-
+.coord-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;}
+.coord-label{font-size:.61rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.coord-val{font-size:.79rem;font-weight:600;color:var(--text);margin-top:1px;}
 .btn-row{display:flex;gap:8px;}
 .btn{
-  flex:1;padding:12px 10px;border-radius:10px;border:none;
-  font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;
+  flex:1;padding:11px 10px;border-radius:10px;border:none;
+  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;
   cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .btn-start{background:var(--accent);color:#0a0c10;}
@@ -117,14 +237,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .btn-stop{background:var(--danger);color:#fff;display:none;}
 .btn-stop:active{transform:scale(.97);}
 .btn-center{
-  flex:0 0 46px;padding:12px;background:var(--surface2);border:1px solid var(--border);
-  color:var(--text2);border-radius:10px;font-size:1rem;cursor:pointer;transition:all .2s;
+  flex:0 0 44px;padding:11px;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);border-radius:10px;cursor:pointer;transition:all .2s;font-size:.95rem;
 }
 .btn-center:active{border-color:var(--accent);color:var(--accent);}
 
 @keyframes markerPulse{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.5);opacity:0}}
 
-/* PIN OVERLAY */
+/* ── PIN ── */
 .pin-overlay{
   position:fixed;inset:0;background:var(--bg);z-index:3000;
   display:none;align-items:center;justify-content:center;
@@ -150,7 +270,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .pin-key.del{color:var(--danger);font-size:.9rem;}
 .pin-error{color:var(--danger);font-size:.85rem;min-height:20px;}
 
-/* PERMISSION REFUSÉE */
+/* ── PERM SCREEN ── */
 .perm-screen{
   position:fixed;inset:0;background:var(--bg);z-index:2000;
   display:none;align-items:center;justify-content:center;
@@ -161,22 +281,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .perm-screen p{color:var(--text2);font-size:.85rem;line-height:1.6;}
 .steps{text-align:left;width:100%;max-width:300px;}
 .step{display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:.82rem;color:var(--text2);}
-.step-num{
-  width:22px;height:22px;min-width:22px;background:var(--accent);color:#0a0c10;
-  border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:.72rem;font-weight:700;
-}
-.btn-reload{
-  background:var(--accent);color:#0a0c10;border:none;
-  padding:12px 28px;border-radius:10px;
-  font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;
-  cursor:pointer;margin-top:8px;
-}
+.step-num{width:22px;height:22px;min-width:22px;background:var(--accent);color:#0a0c10;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;}
+.btn-reload{background:var(--accent);color:#0a0c10;border:none;padding:12px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:8px;}
 </style>
 </head>
 <body>
 
-<!-- PIN OVERLAY -->
+<!-- PIN -->
 <div class="pin-overlay" id="pinOverlay">
   <div style="display:flex;align-items:center;gap:8px;font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800">
     <div class="logo-dot"></div>TrackTeam
@@ -220,6 +331,70 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <button class="btn-reload" onclick="location.reload()">🔄 Réessayer</button>
 </div>
 
+<!-- MODAL NAVIGATION — style Google Maps -->
+<div class="nav-modal" id="navModal" onclick="if(event.target===this)closeNavModal()">
+  <div class="nav-sheet">
+
+    <div class="nav-handle">
+      <h2>🧭 Navigation vers le patron</h2>
+      <button class="nav-close" onclick="closeNavModal()">✕</button>
+    </div>
+
+    <!-- Destination -->
+    <div class="nav-dest">
+      <div class="nav-dest-icon">👔</div>
+      <div class="nav-dest-info">
+        <div class="nav-dest-name" id="navDestName">Patron</div>
+        <div class="nav-dest-coords" id="navDestCoords">—</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="nav-dest-dist" id="navDistVal">—</div>
+        <div class="nav-dest-eta" id="navEtaVal">—</div>
+      </div>
+    </div>
+
+    <!-- Mode de transport -->
+    <div class="transport-section">
+      <div class="transport-label">Mode de transport</div>
+      <div class="transport-grid">
+        <button class="transport-btn" id="tb-moto" onclick="selectTransport('moto')">
+          <span class="transport-icon">🏍️</span>Moto
+        </button>
+        <button class="transport-btn" id="tb-car" onclick="selectTransport('car')">
+          <span class="transport-icon">🚗</span>Voiture
+        </button>
+        <button class="transport-btn" id="tb-walk" onclick="selectTransport('walk')">
+          <span class="transport-icon">🚶</span>À pied
+        </button>
+        <button class="transport-btn" id="tb-bike" onclick="selectTransport('bike')">
+          <span class="transport-icon">🚲</span>Vélo
+        </button>
+      </div>
+    </div>
+
+    <!-- Apps de navigation -->
+    <div class="apps-section">
+      <div class="apps-label">Ouvrir avec</div>
+      <div class="apps-grid">
+        <a class="app-btn" id="btnGmaps" href="#" onclick="openAppNav('gmaps')">
+          <span class="app-btn-icon">🗺️</span>
+          <div><div class="app-btn-name">Google Maps</div><div class="app-btn-sub">Navigation GPS</div></div>
+        </a>
+        <a class="app-btn" id="btnWaze" href="#" onclick="openAppNav('waze')">
+          <span class="app-btn-icon">🔵</span>
+          <div><div class="app-btn-name">Waze</div><div class="app-btn-sub">Trafic en direct</div></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bouton principal Démarrer -->
+    <button class="btn-start-nav moto" id="btnStartNav" onclick="openAppNav('gmaps')">
+      🏍️ Démarrer la navigation moto
+    </button>
+
+  </div>
+</div>
+
 <!-- APP PRINCIPALE -->
 <div class="app-layout">
   <div class="header">
@@ -233,56 +408,71 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
   </div>
 
-  <div id="map"></div>
+  <!-- MAP wrapper avec position relative pour les overlays -->
+  <div style="position:relative;flex:1;min-height:0;overflow:hidden;">
+    <div id="map" style="width:100%;height:100%;"></div>
+
+    <!-- Bannière patron EN LIGNE -->
+    <div class="patron-banner" id="patronBanner">
+      <div class="patron-info">
+        <div class="patron-avatar">👔</div>
+        <div class="patron-details">
+          <div class="patron-label">Votre patron · En ligne</div>
+          <div class="patron-dist" id="patronDistDisplay">Calcul...</div>
+          <div class="patron-eta" id="patronEtaDisplay">—</div>
+        </div>
+      </div>
+      <button class="btn-nav-patron" onclick="openNavModal()">
+        🏍️ Y aller
+      </button>
+    </div>
+
+    <!-- Bannière patron HORS LIGNE -->
+    <div class="patron-offline" id="patronOffline">
+      <span>👔</span>
+      <span>Patron hors ligne — position non disponible</span>
+    </div>
+  </div>
 
   <div class="bottom-panel">
     <div class="bg-banner" id="bgBanner">
       <span>🟢</span>
-      <span>Partage actif en arrière-plan. Ne fermez pas complètement le navigateur. Vous pouvez minimiser la fenêtre ou changer d'app.</span>
+      <span>Partage actif. Ne fermez pas le navigateur — vous pouvez le minimiser.</span>
     </div>
     <div class="error-msg" id="errorMsg"></div>
-
     <div class="status-row">
       <div class="status-pill" id="statusPill">
         <div class="status-dot-anim" id="statusDot"></div>
         <span id="statusText">Prêt à partager</span>
       </div>
-      <div class="update-info" id="updateInfo">Positions envoyées : <span id="updateCount">0</span></div>
+      <div class="update-info" id="updateInfo">Envois : <span id="updateCount">0</span></div>
     </div>
-
     <div class="coords-row" id="coordsRow" style="display:none">
-      <div class="coord-card">
-        <div class="coord-label">Latitude</div>
-        <div class="coord-val" id="coordLat">—</div>
-      </div>
-      <div class="coord-card">
-        <div class="coord-label">Longitude</div>
-        <div class="coord-val" id="coordLng">—</div>
-      </div>
-      <div class="coord-card">
-        <div class="coord-label">Précision</div>
-        <div class="coord-val" id="coordAcc">—</div>
-      </div>
+      <div class="coord-card"><div class="coord-label">Latitude</div><div class="coord-val" id="coordLat">—</div></div>
+      <div class="coord-card"><div class="coord-label">Longitude</div><div class="coord-val" id="coordLng">—</div></div>
+      <div class="coord-card"><div class="coord-label">Précision</div><div class="coord-val" id="coordAcc">—</div></div>
     </div>
-
     <div class="btn-row">
       <button class="btn btn-start" id="btnStart" onclick="startTracking()">📍 Démarrer le partage</button>
-      <button class="btn btn-stop" id="btnStop" onclick="stopTracking()">⏹ Arrêter le partage</button>
-      <button class="btn-center" onclick="centerMap()" title="Centrer sur ma position">🎯</button>
+      <button class="btn btn-stop"  id="btnStop"  onclick="stopTracking()">⏹ Arrêter le partage</button>
+      <button class="btn-center" onclick="fitBothMarkers()" title="Vue globale">🗺</button>
+      <button class="btn-center" onclick="centerMap()" title="Ma position">🎯</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── PARAMÈTRES URL ──
-const params = new URLSearchParams(window.location.search);
+// ══════════════════════════════════════════════
+//  PARAMS URL
+// ══════════════════════════════════════════════
+const params      = new URLSearchParams(window.location.search);
 const companyCode = params.get('company') || 'DEMO';
 const empId       = params.get('emp')     || 'emp_test';
 const empName     = decodeURIComponent(params.get('name') || 'Employé');
 const empPin      = params.get('pin')     || null;
 const empExpires  = parseInt(params.get('expires') || '0');
 
-// ── EXPIRATION ──
+// Expiration
 if (empExpires > 0 && Date.now() > empExpires) {
   document.body.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;
@@ -291,225 +481,348 @@ if (empExpires > 0 && Date.now() > empExpires) {
       <div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800;color:#ff4757">Lien expiré</div>
       <div style="color:#7a8494;font-size:.85rem">Ce lien n'est plus valide.<br>Demandez un nouveau lien à votre patron.</div>
     </div>`;
-  // Arrêter l'exécution ici
   throw new Error('Lien expiré');
 }
 
-// ── PIN ──
-let pinBuffer = '';
-let pinUnlocked = !empPin;
+// ══════════════════════════════════════════════
+//  PIN
+// ══════════════════════════════════════════════
+let pinBuffer = '', pinUnlocked = !empPin;
+if (empPin) document.getElementById('pinOverlay').classList.add('show');
 
-if (empPin) {
-  document.getElementById('pinOverlay').classList.add('show');
-}
-
-function pinInput(d) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += d;
-  updatePinDisplay();
-  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
-}
-function pinDel() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay(); }
-function pinClear() { pinBuffer = ''; updatePinDisplay(); }
-
-function updatePinDisplay() {
-  for (let i = 0; i < 4; i++) {
-    const el = document.getElementById('pd' + i);
-    el.textContent = i < pinBuffer.length ? '●' : '—';
-    el.classList.toggle('filled', i < pinBuffer.length);
+function pinInput(d){ if(pinBuffer.length>=4)return; pinBuffer+=d; updatePinDisplay(); if(pinBuffer.length===4)setTimeout(verifyPin,150); }
+function pinDel(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDisplay(); }
+function pinClear(){ pinBuffer=''; updatePinDisplay(); }
+function updatePinDisplay(){
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('pd'+i);
+    el.textContent=i<pinBuffer.length?'●':'—';
+    el.classList.toggle('filled',i<pinBuffer.length);
   }
 }
-
-function verifyPin() {
-  if (pinBuffer === empPin) {
+function verifyPin(){
+  if(pinBuffer===empPin){
     document.getElementById('pinOverlay').classList.remove('show');
-    pinUnlocked = true;
+    pinUnlocked=true;
   } else {
-    document.getElementById('pinError').textContent = 'Code incorrect';
-    pinBuffer = '';
-    updatePinDisplay();
-    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 2000);
+    document.getElementById('pinError').textContent='Code incorrect';
+    pinBuffer=''; updatePinDisplay();
+    setTimeout(()=>{ document.getElementById('pinError').textContent=''; },2000);
   }
 }
 
-// ── UI INIT ──
+// ══════════════════════════════════════════════
+//  UI INIT
+// ══════════════════════════════════════════════
 document.getElementById('empNameEl').textContent = empName;
 document.getElementById('empCodeEl').textContent = 'Code : ' + companyCode;
-const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
+const initials = empName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??';
 document.getElementById('avatarEl').textContent = initials;
 
-// ── MAP ──
-let map, myMarker = null, myCircle = null, lastLat = null, lastLng = null;
+// ══════════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════════
+let map, myMarker=null, myCircle=null;
+let patronMarker=null, patronCircle=null;
+let lastLat=null, lastLng=null;
+let patronLat=null, patronLng=null;
 
-function initMap() {
-  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.137, 1.222], 6);
-
-  const sat = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    maxZoom: 20, subdomains: ['0','1','2','3']
-  });
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+function initMap(){
+  map = L.map('map',{zoomControl:false,attributionControl:false}).setView([6.137,1.222],6);
+  const sat = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']});
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
   sat.addTo(map);
 
-  let isSat = true;
-  const tb = L.control({ position: 'bottomright' });
-  tb.onAdd = function() {
-    const b = L.DomUtil.create('button');
-    b.innerHTML = '🗺 Plan';
-    b.style.cssText = 'background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 12px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);margin-bottom:8px';
-    b.onclick = function(e) {
+  let isSat=true;
+  const tb=L.control({position:'bottomright'});
+  tb.onAdd=function(){
+    const b=L.DomUtil.create('button');
+    b.innerHTML='🗺 Plan';
+    b.style.cssText='background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 12px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);margin-bottom:8px';
+    b.onclick=function(e){
       L.DomEvent.stopPropagation(e);
-      if (isSat) { map.removeLayer(sat); osm.addTo(map); b.innerHTML = '🛰 Satellite'; isSat = false; }
-      else { map.removeLayer(osm); sat.addTo(map); b.innerHTML = '🗺 Plan'; isSat = true; }
+      if(isSat){map.removeLayer(sat);osm.addTo(map);b.innerHTML='🛰 Satellite';isSat=false;}
+      else{map.removeLayer(osm);sat.addTo(map);b.innerHTML='🗺 Plan';isSat=true;}
     };
     return b;
   };
   tb.addTo(map);
-  L.control.zoom({ position: 'topright' }).addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
 }
 
-function updateMapMarker(lat, lng, acc) {
-  const ll = [lat, lng];
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="position:relative;width:40px;height:40px">
-      <div style="position:absolute;inset:0;background:rgba(0,229,160,.25);border-radius:50%;animation:markerPulse 2s infinite ease-out"></div>
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:#00e5a0;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,229,160,.5)"></div>
+// Marqueur de l'employé (moi)
+function updateMyMarker(lat,lng,acc){
+  const ll=[lat,lng];
+  const icon=L.divIcon({
+    className:'',
+    html:`<div style="position:relative;width:44px;height:44px">
+      <div style="position:absolute;inset:0;background:rgba(0,229,160,.2);border-radius:50%;animation:markerPulse 2s infinite ease-out"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;background:#00e5a0;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,229,160,.6)"></div>
+      <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(0,229,160,.9);color:#0a0c10;font-size:.64rem;font-weight:800;padding:2px 7px;border-radius:8px;white-space:nowrap;font-family:Syne,sans-serif">Moi</div>
     </div>`,
-    iconSize: [40, 40], iconAnchor: [20, 20]
+    iconSize:[44,44],iconAnchor:[22,22]
   });
-  if (myMarker) { myMarker.setLatLng(ll); }
-  else { myMarker = L.marker(ll, { icon }).addTo(map); myMarker.bindPopup(`<b>${empName}</b><br>Ma position`); }
-  if (myCircle) { myCircle.setLatLng(ll).setRadius(acc); }
-  else { myCircle = L.circle(ll, { radius: acc, color: '#00e5a0', fillColor: '#00e5a0', fillOpacity: .1, weight: 1.5 }).addTo(map); }
+  if(myMarker){myMarker.setLatLng(ll);}
+  else{myMarker=L.marker(ll,{icon,zIndexOffset:100}).addTo(map);}
+  if(myCircle){myCircle.setLatLng(ll).setRadius(acc);}
+  else{myCircle=L.circle(ll,{radius:acc,color:'#00e5a0',fillColor:'#00e5a0',fillOpacity:.08,weight:1.5}).addTo(map);}
 }
 
-function centerMap() {
-  if (lastLat !== null) map.flyTo([lastLat, lastLng], 17, { duration: 1 });
+// Marqueur du patron (lu depuis Firebase)
+function updatePatronMarker(lat,lng){
+  const ll=[lat,lng];
+  const icon=L.divIcon({
+    className:'',
+    html:`<div style="position:relative;width:48px;height:48px">
+      <div style="position:absolute;inset:-6px;border-radius:50%;border:3px solid #6c5ce7;opacity:.4;animation:markerPulse 2s infinite ease-out"></div>
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:50%;border:3px solid #fff;box-shadow:0 3px 16px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;z-index:1">👔</div>
+      <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(108,92,231,.9);color:#fff;font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:8px;white-space:nowrap;font-family:Syne,sans-serif">Patron</div>
+    </div>`,
+    iconSize:[48,48],iconAnchor:[24,24]
+  });
+  if(patronMarker){patronMarker.setLatLng(ll);}
+  else{
+    patronMarker=L.marker(ll,{icon,zIndexOffset:200}).addTo(map);
+    patronMarker.bindPopup('<b>👔 Patron</b><br>Position en direct');
+  }
 }
 
-// ── FIREBASE ──
-let db, _ref, _update, _onDisconnect;
-window.addEventListener('firebaseReady', () => {
-  db = window._db;
-  _ref = window._ref;
-  _update = window._update;
-  _onDisconnect = window._onDisconnect;
+function centerMap(){ if(lastLat!==null) map.flyTo([lastLat,lastLng],17,{duration:1}); }
+
+function fitBothMarkers(){
+  const pts=[];
+  if(lastLat!==null) pts.push([lastLat,lastLng]);
+  if(patronLat!==null) pts.push([patronLat,patronLng]);
+  if(pts.length===0) return;
+  if(pts.length===1){ map.flyTo(pts[0],16,{duration:1}); return; }
+  map.fitBounds(L.latLngBounds(pts),{padding:[60,60],maxZoom:17});
+}
+
+// ══════════════════════════════════════════════
+//  FIREBASE — Écouter la position du PATRON
+// ══════════════════════════════════════════════
+let db,_ref,_update,_onValue,_onDisconnect;
+
+window.addEventListener('firebaseReady',()=>{
+  db=window._db; _ref=window._ref; _update=window._update;
+  _onValue=window._onValue; _onDisconnect=window._onDisconnect;
+  listenPatronPosition();
 });
 
-// ── TRACKING ──
-let watchId = null, updateCount = 0, trailPoints = [], tracking = false;
+function listenPatronPosition(){
+  if(!db) return;
+  // Écouter le nœud "patron" dans Firebase
+  // Le patron publie sa position dans companies/{code}/patron
+  _onValue(_ref(db,`companies/${companyCode}/patron`), snap=>{
+    const data=snap.val();
+    if(data && data.lat && data.lng && data.online){
+      patronLat=+data.lat;
+      patronLng=+data.lng;
+      updatePatronMarker(patronLat,patronLng);
+      updateDistanceAndEta();
+      document.getElementById('patronBanner').classList.add('show');
+      document.getElementById('patronOffline').classList.remove('show');
+    } else {
+      // Patron hors ligne
+      patronLat=null; patronLng=null;
+      if(patronMarker){ map.removeLayer(patronMarker); patronMarker=null; }
+      document.getElementById('patronBanner').classList.remove('show');
+      document.getElementById('patronOffline').classList.add('show');
+      // Cacher après 5s si jamais de position reçue
+      setTimeout(()=>{ document.getElementById('patronOffline').classList.remove('show'); },8000);
+    }
+  });
+}
 
-function startTracking() {
-  if (!pinUnlocked) { return; }
-  if (!navigator.geolocation) { showError('Géolocalisation non supportée sur cet appareil.'); return; }
+// ══════════════════════════════════════════════
+//  DISTANCE & ETA
+// ══════════════════════════════════════════════
+// Vitesses moyennes moto par défaut
+const SPEEDS_KMH = { moto: 40, car: 35, walk: 5, bike: 15 };
+let selectedTransport = 'moto';
 
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function formatDist(km){
+  if(km<1) return Math.round(km*1000)+' m';
+  return km.toFixed(1)+' km';
+}
+
+function formatEta(minutes){
+  if(minutes<1) return 'Moins d\'1 min';
+  if(minutes<60) return Math.round(minutes)+' min';
+  const h=Math.floor(minutes/60), m=Math.round(minutes%60);
+  return h+'h'+(m>0?String(m).padStart(2,'0'):'00');
+}
+
+function updateDistanceAndEta(){
+  if(lastLat===null||patronLat===null) return;
+  const km=haversineKm(lastLat,lastLng,patronLat,patronLng);
+  const speed=SPEEDS_KMH[selectedTransport]||40;
+  const etaMin=(km/speed)*60;
+  const distStr=formatDist(km);
+  const etaStr=formatEta(etaMin);
+
+  // Bannière
+  document.getElementById('patronDistDisplay').textContent=distStr;
+  document.getElementById('patronEtaDisplay').textContent='~'+etaStr+' en '+labelTransport(selectedTransport);
+
+  // Modal
+  document.getElementById('navDistVal').textContent=distStr;
+  document.getElementById('navEtaVal').textContent='~'+etaStr+' ('+labelTransport(selectedTransport)+')';
+  document.getElementById('navDestCoords').textContent=patronLat.toFixed(5)+', '+patronLng.toFixed(5);
+}
+
+function labelTransport(t){
+  return {moto:'moto',car:'voiture',walk:'marche',bike:'vélo'}[t]||t;
+}
+
+// ══════════════════════════════════════════════
+//  SÉLECTION MODE TRANSPORT
+// ══════════════════════════════════════════════
+function selectTransport(mode){
+  selectedTransport=mode;
+  ['moto','car','walk','bike'].forEach(m=>{
+    const btn=document.getElementById('tb-'+m);
+    btn.classList.remove('selected','moto');
+    if(m===mode){
+      btn.classList.add('selected');
+      if(m==='moto') btn.classList.add('moto');
+    }
+  });
+  // Mettre à jour le bouton principal
+  const icons={moto:'🏍️',car:'🚗',walk:'🚶',bike:'🚲'};
+  const labels={moto:'Démarrer la navigation moto',car:'Démarrer en voiture',walk:'Démarrer à pied',bike:'Démarrer à vélo'};
+  const startBtn=document.getElementById('btnStartNav');
+  startBtn.textContent=icons[mode]+' '+labels[mode];
+  startBtn.className='btn-start-nav'+(mode==='moto'?' moto':'');
+  updateDistanceAndEta();
+}
+
+// ══════════════════════════════════════════════
+//  MODAL NAVIGATION
+// ══════════════════════════════════════════════
+function openNavModal(){
+  if(!patronLat){
+    alert('La position du patron n\'est pas encore disponible.');
+    return;
+  }
+  document.getElementById('navDestName').textContent='Patron';
+  updateDistanceAndEta();
+  selectTransport(selectedTransport); // refresh UI
+  document.getElementById('navModal').classList.add('show');
+}
+
+function closeNavModal(){
+  document.getElementById('navModal').classList.remove('show');
+}
+
+function openAppNav(app){
+  if(!patronLat){ closeNavModal(); return; }
+  const toLat=patronLat, toLng=patronLng;
+  const fromLat=lastLat, fromLng=lastLng;
+
+  // Mapping mode transport → profil Google Maps
+  const gmapsProfile={moto:'driving',car:'driving',walk:'walking',bike:'bicycling'};
+  const profile=gmapsProfile[selectedTransport]||'driving';
+
+  let url='';
+  if(app==='gmaps'){
+    if(fromLat!==null){
+      url=`https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLng}&destination=${toLat},${toLng}&travelmode=${profile}`;
+    } else {
+      url=`https://www.google.com/maps/dir/?api=1&destination=${toLat},${toLng}&travelmode=${profile}`;
+    }
+  } else if(app==='waze'){
+    url=`https://waze.com/ul?ll=${toLat},${toLng}&navigate=yes`;
+  }
+
+  closeNavModal();
+  window.open(url,'_blank');
+}
+
+// ══════════════════════════════════════════════
+//  TRACKING (partage position de l'employé)
+// ══════════════════════════════════════════════
+let watchId=null, updateCount=0, trailPoints=[], tracking=false;
+
+function startTracking(){
+  if(!pinUnlocked) return;
+  if(!navigator.geolocation){ showError('Géolocalisation non supportée.'); return; }
   setStatus('requesting');
-
-  navigator.geolocation.getCurrentPosition(pos => {
+  navigator.geolocation.getCurrentPosition(pos=>{
     setStatus('active');
-    document.getElementById('btnStart').style.display = 'none';
-    document.getElementById('btnStop').style.display = 'flex';
-    document.getElementById('updateInfo').style.display = 'block';
+    document.getElementById('btnStart').style.display='none';
+    document.getElementById('btnStop').style.display='flex';
+    document.getElementById('updateInfo').style.display='block';
     document.getElementById('bgBanner').classList.add('show');
-    document.getElementById('coordsRow').style.display = 'grid';
-    tracking = true;
-
+    document.getElementById('coordsRow').style.display='grid';
+    tracking=true;
     onPosition(pos);
-    watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
-      enableHighAccuracy: true, timeout: 15000, maximumAge: 5000
-    });
-
-    // Marquer offline si déconnecté
-    if (db) {
-      _onDisconnect(_ref(db, `companies/${companyCode}/employees/${empId}`)).update({ online: false });
-    }
-
-    // Empêcher la mise en veille
-    if ('wakeLock' in navigator) {
-      navigator.wakeLock.request('screen').catch(() => {});
-    }
-  }, onGeoError, { enableHighAccuracy: true, timeout: 15000 });
+    watchId=navigator.geolocation.watchPosition(onPosition,onGeoError,{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+    if(db) _onDisconnect(_ref(db,`companies/${companyCode}/employees/${empId}`)).update({online:false});
+    if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+  },onGeoError,{enableHighAccuracy:true,timeout:15000});
 }
 
-function stopTracking() {
-  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-  tracking = false;
-  setStatus('stopped');
-  document.getElementById('btnStart').style.display = 'flex';
-  document.getElementById('btnStop').style.display = 'none';
+function stopTracking(){
+  if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  tracking=false; setStatus('stopped');
+  document.getElementById('btnStart').style.display='flex';
+  document.getElementById('btnStop').style.display='none';
   document.getElementById('bgBanner').classList.remove('show');
-  if (db) {
-    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
-  }
+  if(db) _update(_ref(db,`companies/${companyCode}/employees/${empId}`),{online:false});
 }
 
-function onPosition(pos) {
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
-  const acc = Math.round(pos.coords.accuracy);
-  const ts  = Date.now();
-
-  lastLat = lat; lastLng = lng;
-
-  trailPoints.push({ lat, lng, ts });
-  if (trailPoints.length > 50) trailPoints.shift();
-
-  document.getElementById('coordLat').textContent = lat.toFixed(5);
-  document.getElementById('coordLng').textContent = lng.toFixed(5);
-  document.getElementById('coordAcc').textContent = '± ' + acc + ' m';
-
+function onPosition(pos){
+  const lat=pos.coords.latitude, lng=pos.coords.longitude;
+  const acc=Math.round(pos.coords.accuracy), ts=Date.now();
+  lastLat=lat; lastLng=lng;
+  trailPoints.push({lat,lng,ts});
+  if(trailPoints.length>50) trailPoints.shift();
+  document.getElementById('coordLat').textContent=lat.toFixed(5);
+  document.getElementById('coordLng').textContent=lng.toFixed(5);
+  document.getElementById('coordAcc').textContent='± '+acc+' m';
   updateCount++;
-  document.getElementById('updateCount').textContent = updateCount;
-
-  updateMapMarker(lat, lng, acc);
-  if (updateCount === 1) map.flyTo([lat, lng], 16, { duration: 1.5 });
-
-  if (db) {
-    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
-      lat, lng, online: true, lastSeen: ts, accuracy: acc, trail: trailPoints
+  document.getElementById('updateCount').textContent=updateCount;
+  updateMyMarker(lat,lng,acc);
+  if(updateCount===1) map.flyTo([lat,lng],16,{duration:1.5});
+  // Mettre à jour la distance vers le patron
+  updateDistanceAndEta();
+  if(db){
+    _update(_ref(db,`companies/${companyCode}/employees/${empId}`),{
+      lat,lng,online:true,lastSeen:ts,accuracy:acc,trail:trailPoints
     });
   }
 }
 
-function onGeoError(err) {
-  if (err.code === 1) {
-    document.getElementById('permScreen').classList.add('show');
-  } else if (err.code === 2) {
-    showError('GPS indisponible. Activez la localisation.');
-    setStatus('error');
-  } else {
-    showError('Délai dépassé. Vérifiez votre GPS.');
-    setStatus('error');
-  }
+function onGeoError(err){
+  if(err.code===1){ document.getElementById('permScreen').classList.add('show'); }
+  else if(err.code===2){ showError('GPS indisponible.'); setStatus('error'); }
+  else { showError('Délai GPS dépassé.'); setStatus('error'); }
 }
 
-function setStatus(state) {
-  const pill = document.getElementById('statusPill');
-  const dot  = document.getElementById('statusDot');
-  const txt  = document.getElementById('statusText');
-  pill.className = 'status-pill';
-  dot.className  = 'status-dot-anim';
-  const states = {
-    requesting: ['', '', 'Obtention de la position...'],
-    active:     ['active', 'active', 'Position partagée en direct'],
-    stopped:    ['error', 'error', 'Partage arrêté'],
-    error:      ['error', 'error', 'Erreur de géolocalisation']
-  };
-  const [pc, dc, lb] = states[state] || ['', '', 'Prêt à partager'];
-  if (pc) pill.classList.add(pc);
-  if (dc) dot.classList.add(dc);
-  txt.textContent = lb;
+function setStatus(state){
+  const pill=document.getElementById('statusPill'),dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
+  pill.className='status-pill'; dot.className='status-dot-anim';
+  const s={requesting:['','','Obtention de la position...'],active:['active','active','Position partagée en direct'],stopped:['error','error','Partage arrêté'],error:['error','error','Erreur GPS']};
+  const[pc,dc,lb]=s[state]||['','','Prêt'];
+  if(pc)pill.classList.add(pc); if(dc)dot.classList.add(dc); txt.textContent=lb;
 }
 
-function showError(msg) {
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 5000);
+function showError(msg){
+  const el=document.getElementById('errorMsg');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),5000);
 }
 
 // ── INIT ──
 initMap();
+selectTransport('moto'); // Moto sélectionné par défaut
 </script>
 </body>
 </html>
