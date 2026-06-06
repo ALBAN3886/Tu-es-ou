@@ -1508,10 +1508,39 @@ function decodeManeuver(step) {
 // ── Démarrer la navigation intégrée ──
 async function startInternalNav() {
   if (!navTargetLat) return;
+
+  // Si position pas encore disponible → la demander automatiquement
   if (!patronLat) {
-    showToast('Activez 📡 votre position d\'abord');
-    return;
+    closeModal('navModal');
+    showToast('📡 Obtention de votre position…');
+    try {
+      await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(pos => {
+          patronLat = pos.coords.latitude;
+          patronLng = pos.coords.longitude;
+          // Placer le marqueur patron si pas encore fait
+          if (!patronMarker) {
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="position:relative;width:50px;height:50px">
+                <div style="width:50px;height:50px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:50%;border:3px solid #fff;box-shadow:0 3px 16px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;z-index:1">📡</div>
+                <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(108,92,231,.9);color:#fff;font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:8px;white-space:nowrap">Moi</div>
+              </div>`,
+              iconSize: [50, 50], iconAnchor: [25, 25]
+            });
+            patronMarker = L.marker([patronLat, patronLng], { icon, zIndexOffset: 500 }).addTo(map);
+          } else {
+            patronMarker.setLatLng([patronLat, patronLng]);
+          }
+          resolve();
+        }, reject, { enableHighAccuracy: true, timeout: 10000 });
+      });
+    } catch(e) {
+      showToast('❌ GPS refusé — autorisez la géolocalisation dans votre navigateur');
+      return;
+    }
   }
+
   closeModal('navModal');
   showToast('🔄 Calcul de l\'itinéraire...');
 
@@ -1740,8 +1769,9 @@ function updateNavHUD(speedKmh) {
   }
 }
 
-function recalcRoute() {
-  if (!patronLat || !navTargetLat) return;
+async function recalcRoute() {
+  if (!navTargetLat) return;
+  if (!patronLat) { showToast('Position GPS non disponible'); return; }
   showToast('🔄 Recalcul en cours…');
   // Nettoyer et recalculer
   const savedTransport = patronNavTransport;
