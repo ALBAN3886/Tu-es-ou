@@ -894,30 +894,34 @@ let mapReady = false;
 function initMap() {
   map = L.map('map', { zoomControl: false }).setView([6.137, 1.222], 7);
 
-  const satellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    attribution: '© Google Maps', maxZoom: 20, subdomains: ['0','1','2','3']
+  // Esri satellite — gratuit, sans CORS, fiable sur mobile
+  const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri', maxZoom: 19
   });
+  // Plan OpenStreetMap
   const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors', maxZoom: 19
   });
 
-  satellite.addTo(map);
+  street.addTo(map); // Plan par défaut (plus léger sur mobile)
 
-  let isSatellite = true;
+  let isSatellite = false;
   const toggleBtn = L.control({ position: 'bottomright' });
   toggleBtn.onAdd = function() {
     const btn = L.DomUtil.create('button');
-    btn.innerHTML = '🗺 Plan';
+    btn.innerHTML = '🛰 Satellite';
     btn.style.cssText = 'background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 14px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)';
     btn.onclick = function(e) {
       L.DomEvent.stopPropagation(e);
-      if (isSatellite) { map.removeLayer(satellite); street.addTo(map); btn.innerHTML = '🛰 Satellite'; isSatellite = false; }
-      else { map.removeLayer(street); satellite.addTo(map); btn.innerHTML = '🗺 Plan'; isSatellite = true; }
+      if (!isSatellite) { map.removeLayer(street); satellite.addTo(map); btn.innerHTML = '🗺 Plan'; isSatellite = true; }
+      else { map.removeLayer(satellite); street.addTo(map); btn.innerHTML = '🛰 Satellite'; isSatellite = false; }
     };
     return btn;
   };
   toggleBtn.addTo(map);
   L.control.zoom({ position: 'topright' }).addTo(map);
+  // Fix carte noire : forcer recalcul taille après rendu DOM
+  setTimeout(() => { map.invalidateSize(); }, 400);
 
   map.on('click', function(e) {
     if (zoneEnabled) { zoneCenter = e.latlng; updateZoneCircle(); }
@@ -1307,50 +1311,71 @@ function locatePatron() {
     return;
   }
 
-  showToast('Localisation en cours...');
+  // Vérifier la permission avant de lancer
+  const doWatch = () => {
+    showToast('📡 Localisation en cours...');
+    patronWatchId = navigator.geolocation.watchPosition(pos => {
+      patronLat = pos.coords.latitude;
+      patronLng = pos.coords.longitude;
 
-  patronWatchId = navigator.geolocation.watchPosition(pos => {
-    patronLat = pos.coords.latitude;
-    patronLng = pos.coords.longitude;
-
-    const patronIcon = L.divIcon({
-      className: '',
-      html: `<div style="position:relative;width:50px;height:50px">
-        <div style="position:absolute;inset:-8px;border-radius:50%;border:3px solid #6c5ce7;opacity:.4;animation:markerPulse 1.8s ease-out infinite"></div>
-        <div style="width:50px;height:50px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:50%;border:3px solid #fff;box-shadow:0 3px 16px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;z-index:1">📡</div>
-        <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(108,92,231,.9);color:#fff;font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:8px;white-space:nowrap">Moi (Patron)</div>
-      </div>`,
-      iconSize: [50, 50], iconAnchor: [25, 25]
-    });
-
-    if (patronMarker) patronMarker.setLatLng([patronLat, patronLng]);
-    else {
-      patronMarker = L.marker([patronLat, patronLng], { icon: patronIcon, zIndexOffset: 500 }).addTo(map);
-      patronMarker.bindPopup('<b>📡 Ma position</b><br>Patron — en direct');
-      showToast('📡 Position publiée — les employés peuvent vous voir');
-    }
-
-    document.getElementById('patronMarkerInfo').style.display = 'block';
-    document.getElementById('patronMarkerInfo').innerHTML = '📡 Position publiée · <span style="color:var(--accent)">Actif</span>';
-
-    // ✅ Publier la position dans Firebase pour que les employés la voient
-    if (db) {
-      const code = localStorage.getItem('tt_code') || 'DEMO';
-      window._update(_ref(db, `companies/${code}/patron`), {
-        lat: patronLat,
-        lng: patronLng,
-        online: true,
-        lastSeen: Date.now(),
-        accuracy: Math.round(pos.coords.accuracy)
+      const patronIcon = L.divIcon({
+        className: '',
+        html: `<div style="position:relative;width:50px;height:50px">
+          <div style="position:absolute;inset:-8px;border-radius:50%;border:3px solid #6c5ce7;opacity:.4;animation:markerPulse 1.8s ease-out infinite"></div>
+          <div style="width:50px;height:50px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:50%;border:3px solid #fff;box-shadow:0 3px 16px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;z-index:1">📡</div>
+          <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(108,92,231,.9);color:#fff;font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:8px;white-space:nowrap">Moi (Patron)</div>
+        </div>`,
+        iconSize: [50, 50], iconAnchor: [25, 25]
       });
-      // Marquer offline si déconnecté
-      window._onDisconnect(_ref(db, `companies/${code}/patron`)).update({ online: false });
-    }
 
-  }, err => {
-    showToast('Erreur GPS : ' + err.message);
-    patronWatchId = null;
-  }, { enableHighAccuracy: true, maximumAge: 5000 });
+      if (patronMarker) patronMarker.setLatLng([patronLat, patronLng]);
+      else {
+        patronMarker = L.marker([patronLat, patronLng], { icon: patronIcon, zIndexOffset: 500 }).addTo(map);
+        patronMarker.bindPopup('<b>📡 Ma position</b><br>Patron — en direct');
+        map.flyTo([patronLat, patronLng], 16, { duration: 1.2 });
+        showToast('📡 Position publiée — les employés peuvent vous voir');
+      }
+
+      document.getElementById('patronMarkerInfo').style.display = 'block';
+      document.getElementById('patronMarkerInfo').innerHTML = '📡 Position publiée · <span style="color:var(--accent)">Actif</span>';
+
+      if (db) {
+        const code = localStorage.getItem('tt_code') || 'DEMO';
+        window._update(_ref(db, `companies/${code}/patron`), {
+          lat: patronLat, lng: patronLng, online: true,
+          lastSeen: Date.now(), accuracy: Math.round(pos.coords.accuracy)
+        });
+        window._onDisconnect(_ref(db, `companies/${code}/patron`)).update({ online: false });
+      }
+
+    }, err => {
+      if (err.code === 1) {
+        showToast('❌ GPS refusé — autorisez la géolocalisation dans les paramètres du navigateur');
+        // Afficher un guide visuel
+        const guide = document.createElement('div');
+        guide.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111318;border:1px solid #ff4757;color:#e8ecf0;padding:12px 18px;border-radius:10px;font-size:.82rem;z-index:9999;max-width:90vw;text-align:center;line-height:1.6';
+        guide.innerHTML = '🔒 Appuyez sur l\'icône cadenas dans la barre d\'adresse<br>→ <b>Autorisations → Position → Autoriser</b><br>puis rechargez la page';
+        document.body.appendChild(guide);
+        setTimeout(() => guide.remove(), 6000);
+      } else {
+        showToast('⚠️ Erreur GPS : ' + err.message);
+      }
+      patronWatchId = null;
+    }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+  };
+
+  // Vérifier permission d'abord (API moderne)
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'denied') {
+        showToast('❌ GPS refusé — autorisez la localisation dans les paramètres du navigateur');
+      } else {
+        doWatch();
+      }
+    }).catch(() => doWatch());
+  } else {
+    doWatch();
+  }
 }
 
 // ══════════════════════════════════════════════
