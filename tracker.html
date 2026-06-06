@@ -21,86 +21,173 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-window._db=db; window._ref=ref; window._update=update; window._onDisconnect=onDisconnect;
-window._firebaseReady=true; window.dispatchEvent(new Event('firebaseReady'));
+window._db = db;
+window._ref = ref;
+window._update = update;
+window._onDisconnect = onDisconnect;
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebaseReady'));
 </script>
+
 <style>
-:root{--bg:#0a0c10;--surface:#111318;--surface2:#181c24;--border:#1e2330;--accent:#00e5a0;--accent2:#0099ff;--danger:#ff4757;--text:#e8ecf0;--text2:#7a8494;}
+:root{
+  --bg:#0a0c10;--surface:#111318;--surface2:#181c24;
+  --border:#1e2330;--accent:#00e5a0;--accent2:#0099ff;
+  --danger:#ff4757;--text:#e8ecf0;--text2:#7a8494;
+}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+
 .app-layout{display:flex;flex-direction:column;height:100vh;}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100;}
-.logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+
+/* HEADER */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;}
 .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{box-shadow:0 0 0 6px rgba(0,229,160,0)}}
+
 .emp-badge{display:flex;align-items:center;gap:8px;}
-.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;color:#0a0c10;flex-shrink:0;}
+.avatar{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;color:#0a0c10;flex-shrink:0;
+}
 .emp-info{display:flex;flex-direction:column;}
-.emp-name{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;line-height:1.2;}
-.emp-code{font-size:.72rem;color:var(--text2);}
+.emp-name{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;line-height:1.2;}
+.emp-code{font-size:.7rem;color:var(--text2);}
+
+/* MAP */
 #map{flex:1;width:100%;min-height:0;}
-.bottom-panel{background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;z-index:100;}
+
+/* BOTTOM PANEL */
+.bottom-panel{
+  background:var(--surface);border-top:1px solid var(--border);
+  padding:12px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;z-index:100;
+}
+
+.bg-banner{
+  background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);
+  border-radius:8px;padding:8px 12px;font-size:.77rem;color:var(--accent);
+  display:none;align-items:center;gap:8px;line-height:1.4;
+}
+.bg-banner.show{display:flex;}
+
+.error-msg{
+  background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);
+  border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--danger);display:none;
+}
+.error-msg.show{display:block;}
+
 .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.status-pill{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:.82rem;transition:all .3s;}
+
+.status-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:6px 12px;font-size:.8rem;transition:all .3s;
+}
 .status-pill.active{border-color:var(--accent);background:rgba(0,229,160,.08);}
 .status-pill.error{border-color:var(--danger);background:rgba(255,71,87,.08);}
+
 .status-dot-anim{width:8px;height:8px;border-radius:50%;background:var(--text2);flex-shrink:0;}
 .status-dot-anim.active{background:var(--accent);animation:blink 1.5s infinite;}
 .status-dot-anim.error{background:var(--danger);}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.update-info{text-align:right;font-size:.73rem;color:var(--text2);display:none;}
+.update-info span{color:var(--accent);font-weight:700;}
+
 .coords-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
 .coord-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;}
-.coord-label{font-size:.65rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
-.coord-val{font-size:.82rem;font-weight:600;color:var(--text);margin-top:1px;}
+.coord-label{font-size:.63rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.coord-val{font-size:.8rem;font-weight:600;color:var(--text);margin-top:1px;}
+
 .btn-row{display:flex;gap:8px;}
-.btn{flex:1;padding:11px 10px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn{
+  flex:1;padding:12px 10px;border-radius:10px;border:none;
+  font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
 .btn-start{background:var(--accent);color:#0a0c10;}
 .btn-start:active{transform:scale(.97);}
 .btn-stop{background:var(--danger);color:#fff;display:none;}
-.btn-center{flex:0 0 44px;padding:11px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:10px;font-size:1rem;cursor:pointer;transition:all .2s;}
+.btn-stop:active{transform:scale(.97);}
+.btn-center{
+  flex:0 0 46px;padding:12px;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);border-radius:10px;font-size:1rem;cursor:pointer;transition:all .2s;
+}
 .btn-center:active{border-color:var(--accent);color:var(--accent);}
-.update-info{text-align:center;font-size:.75rem;color:var(--text2);display:none;}
-.update-info span{color:var(--accent);font-weight:700;}
-.bg-banner{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--accent);display:none;align-items:center;gap:8px;}
-.bg-banner.show{display:flex;}
-.error-msg{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.3);border-radius:8px;padding:8px 12px;font-size:.8rem;color:var(--danger);display:none;}
-.error-msg.show{display:block;}
-/* PIN */
-.pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:3000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;}
+
+@keyframes markerPulse{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.5);opacity:0}}
+
+/* PIN OVERLAY */
+.pin-overlay{
+  position:fixed;inset:0;background:var(--bg);z-index:3000;
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:18px;padding:24px;text-align:center;
+}
 .pin-overlay.show{display:flex;}
-.pin-overlay h2{font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--accent);text-align:center;}
-.pin-overlay p{color:var(--text2);font-size:.85rem;text-align:center;}
+.pin-overlay h2{font-family:'Syne',sans-serif;font-size:1.2rem;color:var(--accent);}
+.pin-overlay p{color:var(--text2);font-size:.85rem;}
 .pin-display{display:flex;gap:10px;justify-content:center;}
-.pin-digit{width:46px;height:56px;background:var(--surface2);border:2px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);}
+.pin-digit{
+  width:46px;height:56px;background:var(--surface2);border:2px solid var(--border);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);
+}
 .pin-digit.filled{border-color:var(--accent);}
 .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:220px;}
-.pin-key{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;text-align:center;transition:all .15s;}
+.pin-key{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;
+  padding:14px;border-radius:12px;cursor:pointer;text-align:center;transition:all .15s;
+}
 .pin-key:active{transform:scale(.95);}
 .pin-key.del{color:var(--danger);font-size:.9rem;}
 .pin-error{color:var(--danger);font-size:.85rem;min-height:20px;}
-/* PERM */
-.perm-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:32px;text-align:center;}
+
+/* PERMISSION REFUSÉE */
+.perm-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:2000;
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;padding:32px;text-align:center;
+}
 .perm-screen.show{display:flex;}
 .perm-screen h2{font-family:'Syne',sans-serif;font-size:1.1rem;}
 .perm-screen p{color:var(--text2);font-size:.85rem;line-height:1.6;}
 .steps{text-align:left;width:100%;max-width:300px;}
 .step{display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:.82rem;color:var(--text2);}
-.step-num{width:22px;height:22px;min-width:22px;background:var(--accent);color:#0a0c10;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;}
-.btn-reload{background:var(--accent);color:#0a0c10;border:none;padding:12px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:8px;}
-@keyframes markerPulse{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.5);opacity:0}}
+.step-num{
+  width:22px;height:22px;min-width:22px;background:var(--accent);color:#0a0c10;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;
+}
+.btn-reload{
+  background:var(--accent);color:#0a0c10;border:none;
+  padding:12px 28px;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;
+  cursor:pointer;margin-top:8px;
+}
 </style>
 </head>
 <body>
 
+<!-- PIN OVERLAY -->
 <div class="pin-overlay" id="pinOverlay">
-  <div class="logo" style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800">
+  <div style="display:flex;align-items:center;gap:8px;font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800">
     <div class="logo-dot"></div>TrackTeam
   </div>
   <h2>🔒 Lien sécurisé</h2>
   <p>Entrez le code PIN fourni par votre patron</p>
   <div class="pin-display">
-    <div class="pin-digit" id="pd0">—</div><div class="pin-digit" id="pd1">—</div>
-    <div class="pin-digit" id="pd2">—</div><div class="pin-digit" id="pd3">—</div>
+    <div class="pin-digit" id="pd0">—</div>
+    <div class="pin-digit" id="pd1">—</div>
+    <div class="pin-digit" id="pd2">—</div>
+    <div class="pin-digit" id="pd3">—</div>
   </div>
   <div class="pin-error" id="pinError"></div>
   <div class="pin-keypad">
@@ -115,10 +202,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <button class="pin-key" onclick="pinInput('9')">9</button>
     <button class="pin-key del" onclick="pinDel()">⌫</button>
     <button class="pin-key" onclick="pinInput('0')">0</button>
-    <button class="pin-key" onclick="pinClear()" style="font-size:.75rem;color:var(--text2)">C</button>
+    <button class="pin-key" onclick="pinClear()" style="font-size:.72rem;color:var(--text2)">C</button>
   </div>
 </div>
 
+<!-- PERMISSION REFUSÉE -->
 <div class="perm-screen" id="permScreen">
   <div style="font-size:3rem">🔒</div>
   <h2>Accès à la position refusé</h2>
@@ -132,6 +220,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <button class="btn-reload" onclick="location.reload()">🔄 Réessayer</button>
 </div>
 
+<!-- APP PRINCIPALE -->
 <div class="app-layout">
   <div class="header">
     <div class="logo"><div class="logo-dot"></div>TrackTeam</div>
@@ -149,9 +238,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div class="bottom-panel">
     <div class="bg-banner" id="bgBanner">
       <span>🟢</span>
-      <span>Partage actif en arrière-plan. Ne fermez pas le navigateur. Vous pouvez minimiser la fenêtre ou changer d'app.</span>
+      <span>Partage actif en arrière-plan. Ne fermez pas complètement le navigateur. Vous pouvez minimiser la fenêtre ou changer d'app.</span>
     </div>
     <div class="error-msg" id="errorMsg"></div>
+
     <div class="status-row">
       <div class="status-pill" id="statusPill">
         <div class="status-dot-anim" id="statusDot"></div>
@@ -159,147 +249,266 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       </div>
       <div class="update-info" id="updateInfo">Positions envoyées : <span id="updateCount">0</span></div>
     </div>
+
     <div class="coords-row" id="coordsRow" style="display:none">
-      <div class="coord-card"><div class="coord-label">Latitude</div><div class="coord-val" id="coordLat">—</div></div>
-      <div class="coord-card"><div class="coord-label">Longitude</div><div class="coord-val" id="coordLng">—</div></div>
-      <div class="coord-card"><div class="coord-label">Précision</div><div class="coord-val" id="coordAcc">—</div></div>
+      <div class="coord-card">
+        <div class="coord-label">Latitude</div>
+        <div class="coord-val" id="coordLat">—</div>
+      </div>
+      <div class="coord-card">
+        <div class="coord-label">Longitude</div>
+        <div class="coord-val" id="coordLng">—</div>
+      </div>
+      <div class="coord-card">
+        <div class="coord-label">Précision</div>
+        <div class="coord-val" id="coordAcc">—</div>
+      </div>
     </div>
+
     <div class="btn-row">
       <button class="btn btn-start" id="btnStart" onclick="startTracking()">📍 Démarrer le partage</button>
       <button class="btn btn-stop" id="btnStop" onclick="stopTracking()">⏹ Arrêter le partage</button>
-      <button class="btn-center" onclick="centerMap()" title="Centrer">🎯</button>
+      <button class="btn-center" onclick="centerMap()" title="Centrer sur ma position">🎯</button>
     </div>
   </div>
 </div>
 
 <script>
+// ── PARAMÈTRES URL ──
 const params = new URLSearchParams(window.location.search);
-const companyCode = params.get('company')||'DEMO';
-const empId = params.get('emp')||'emp_test';
-const empName = decodeURIComponent(params.get('name')||'Employé');
-const empPin = params.get('pin')||null;
-const empExpires = parseInt(params.get('expires')||'0');
+const companyCode = params.get('company') || 'DEMO';
+const empId       = params.get('emp')     || 'emp_test';
+const empName     = decodeURIComponent(params.get('name') || 'Employé');
+const empPin      = params.get('pin')     || null;
+const empExpires  = parseInt(params.get('expires') || '0');
 
-// Expiration
-if (empExpires>0 && Date.now()>empExpires) {
-  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0a0c10;color:#e8ecf0;font-family:DM Sans,sans-serif;text-align:center;padding:32px"><div style="font-size:3rem">⏰</div><div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800;color:#ff4757">Lien expiré</div><div style="color:#7a8494;font-size:.85rem">Ce lien n\'est plus valide.<br>Demandez un nouveau lien à votre patron.</div></div>';
+// ── EXPIRATION ──
+if (empExpires > 0 && Date.now() > empExpires) {
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;
+      background:#0a0c10;color:#e8ecf0;font-family:DM Sans,sans-serif;text-align:center;padding:32px">
+      <div style="font-size:3rem">⏰</div>
+      <div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800;color:#ff4757">Lien expiré</div>
+      <div style="color:#7a8494;font-size:.85rem">Ce lien n'est plus valide.<br>Demandez un nouveau lien à votre patron.</div>
+    </div>`;
+  // Arrêter l'exécution ici
+  throw new Error('Lien expiré');
 }
 
-// PIN
-let pinBuffer='', pinUnlocked=!empPin;
-if(empPin) document.getElementById('pinOverlay').classList.add('show');
-function pinInput(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDisplay();if(pinBuffer.length===4)setTimeout(verifyPin,150);}
-function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDisplay();}
-function pinClear(){pinBuffer='';updatePinDisplay();}
-function updatePinDisplay(){for(let i=0;i<4;i++){const el=document.getElementById('pd'+i);el.textContent=i<pinBuffer.length?'●':'—';el.classList.toggle('filled',i<pinBuffer.length);}}
-function verifyPin(){
-  if(pinBuffer===empPin){document.getElementById('pinOverlay').classList.remove('show');pinUnlocked=true;}
-  else{document.getElementById('pinError').textContent='Code incorrect';pinBuffer='';updatePinDisplay();setTimeout(()=>document.getElementById('pinError').textContent='',2000);}
+// ── PIN ──
+let pinBuffer = '';
+let pinUnlocked = !empPin;
+
+if (empPin) {
+  document.getElementById('pinOverlay').classList.add('show');
 }
 
-// UI init
-document.getElementById('empNameEl').textContent=empName;
-document.getElementById('empCodeEl').textContent='Code : '+companyCode;
-const initials=empName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-document.getElementById('avatarEl').textContent=initials||'??';
+function pinInput(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDisplay();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+function pinDel() { pinBuffer = pinBuffer.slice(0, -1); updatePinDisplay(); }
+function pinClear() { pinBuffer = ''; updatePinDisplay(); }
 
-// MAP
-let map, myMarker=null, myCircle=null, lastLat=null, lastLng=null;
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('pd' + i);
+    el.textContent = i < pinBuffer.length ? '●' : '—';
+    el.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
 
-function initMap(){
-  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([6.137,1.222],6);
-  const sat=L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']});
-  const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+function verifyPin() {
+  if (pinBuffer === empPin) {
+    document.getElementById('pinOverlay').classList.remove('show');
+    pinUnlocked = true;
+  } else {
+    document.getElementById('pinError').textContent = 'Code incorrect';
+    pinBuffer = '';
+    updatePinDisplay();
+    setTimeout(() => { document.getElementById('pinError').textContent = ''; }, 2000);
+  }
+}
+
+// ── UI INIT ──
+document.getElementById('empNameEl').textContent = empName;
+document.getElementById('empCodeEl').textContent = 'Code : ' + companyCode;
+const initials = empName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??';
+document.getElementById('avatarEl').textContent = initials;
+
+// ── MAP ──
+let map, myMarker = null, myCircle = null, lastLat = null, lastLng = null;
+
+function initMap() {
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([6.137, 1.222], 6);
+
+  const sat = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20, subdomains: ['0','1','2','3']
+  });
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
   sat.addTo(map);
-  let isSat=true;
-  const tb=L.control({position:'bottomright'});
-  tb.onAdd=function(){
-    const b=L.DomUtil.create('button');
-    b.innerHTML='🗺 Plan';
-    b.style.cssText='background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 12px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);margin-bottom:8px';
-    b.onclick=function(e){L.DomEvent.stopPropagation(e);if(isSat){map.removeLayer(sat);osm.addTo(map);b.innerHTML='🛰 Satellite';isSat=false;}else{map.removeLayer(osm);sat.addTo(map);b.innerHTML='🗺 Plan';isSat=true;}};
+
+  let isSat = true;
+  const tb = L.control({ position: 'bottomright' });
+  tb.onAdd = function() {
+    const b = L.DomUtil.create('button');
+    b.innerHTML = '🗺 Plan';
+    b.style.cssText = 'background:#111318;color:#e8ecf0;border:1px solid #1e2330;padding:8px 12px;border-radius:8px;font-family:DM Sans,sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);margin-bottom:8px';
+    b.onclick = function(e) {
+      L.DomEvent.stopPropagation(e);
+      if (isSat) { map.removeLayer(sat); osm.addTo(map); b.innerHTML = '🛰 Satellite'; isSat = false; }
+      else { map.removeLayer(osm); sat.addTo(map); b.innerHTML = '🗺 Plan'; isSat = true; }
+    };
     return b;
   };
   tb.addTo(map);
-  L.control.zoom({position:'topright'}).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
 }
 
-function updateMapMarker(lat,lng,acc){
-  const ll=[lat,lng];
-  const icon=L.divIcon({className:'',html:`<div style="position:relative;width:40px;height:40px"><div style="position:absolute;inset:0;background:rgba(0,229,160,.25);border-radius:50%;animation:markerPulse 2s infinite ease-out"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:#00e5a0;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,229,160,.5)"></div></div>`,iconSize:[40,40],iconAnchor:[20,20]});
-  if(myMarker){myMarker.setLatLng(ll);}
-  else{myMarker=L.marker(ll,{icon}).addTo(map);myMarker.bindPopup(`<b>${empName}</b><br>Ma position`);}
-  if(myCircle){myCircle.setLatLng(ll).setRadius(acc);}
-  else{myCircle=L.circle(ll,{radius:acc,color:'#00e5a0',fillColor:'#00e5a0',fillOpacity:.1,weight:1.5}).addTo(map);}
+function updateMapMarker(lat, lng, acc) {
+  const ll = [lat, lng];
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="position:relative;width:40px;height:40px">
+      <div style="position:absolute;inset:0;background:rgba(0,229,160,.25);border-radius:50%;animation:markerPulse 2s infinite ease-out"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:#00e5a0;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,229,160,.5)"></div>
+    </div>`,
+    iconSize: [40, 40], iconAnchor: [20, 20]
+  });
+  if (myMarker) { myMarker.setLatLng(ll); }
+  else { myMarker = L.marker(ll, { icon }).addTo(map); myMarker.bindPopup(`<b>${empName}</b><br>Ma position`); }
+  if (myCircle) { myCircle.setLatLng(ll).setRadius(acc); }
+  else { myCircle = L.circle(ll, { radius: acc, color: '#00e5a0', fillColor: '#00e5a0', fillOpacity: .1, weight: 1.5 }).addTo(map); }
 }
 
-function centerMap(){if(lastLat!==null)map.flyTo([lastLat,lastLng],17,{duration:1});}
+function centerMap() {
+  if (lastLat !== null) map.flyTo([lastLat, lastLng], 17, { duration: 1 });
+}
 
-// Firebase
-let db,_ref,_update,_onDisconnect;
-window.addEventListener('firebaseReady',()=>{db=window._db;_ref=window._ref;_update=window._update;_onDisconnect=window._onDisconnect;});
+// ── FIREBASE ──
+let db, _ref, _update, _onDisconnect;
+window.addEventListener('firebaseReady', () => {
+  db = window._db;
+  _ref = window._ref;
+  _update = window._update;
+  _onDisconnect = window._onDisconnect;
+});
 
-// TRACKING
-let watchId=null,updateCount=0,trailPoints=[],tracking=false;
+// ── TRACKING ──
+let watchId = null, updateCount = 0, trailPoints = [], tracking = false;
 
-function startTracking(){
-  if(!pinUnlocked)return;
-  if(!navigator.geolocation){showError('Géolocalisation non supportée.');return;}
+function startTracking() {
+  if (!pinUnlocked) { return; }
+  if (!navigator.geolocation) { showError('Géolocalisation non supportée sur cet appareil.'); return; }
+
   setStatus('requesting');
-  navigator.geolocation.getCurrentPosition(pos=>{
+
+  navigator.geolocation.getCurrentPosition(pos => {
     setStatus('active');
-    document.getElementById('btnStart').style.display='none';
-    document.getElementById('btnStop').style.display='flex';
-    document.getElementById('updateInfo').style.display='block';
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display = 'flex';
+    document.getElementById('updateInfo').style.display = 'block';
     document.getElementById('bgBanner').classList.add('show');
-    document.getElementById('coordsRow').style.display='grid';
-    tracking=true;
+    document.getElementById('coordsRow').style.display = 'grid';
+    tracking = true;
+
     onPosition(pos);
-    watchId=navigator.geolocation.watchPosition(onPosition,onGeoError,{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
-    if(db)_onDisconnect(_ref(db,`companies/${companyCode}/employees/${empId}`)).update({online:false});
-    if('wakeLock' in navigator)navigator.wakeLock.request('screen').catch(()=>{});
-  },onGeoError,{enableHighAccuracy:true,timeout:15000});
+    watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+      enableHighAccuracy: true, timeout: 15000, maximumAge: 5000
+    });
+
+    // Marquer offline si déconnecté
+    if (db) {
+      _onDisconnect(_ref(db, `companies/${companyCode}/employees/${empId}`)).update({ online: false });
+    }
+
+    // Empêcher la mise en veille
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').catch(() => {});
+    }
+  }, onGeoError, { enableHighAccuracy: true, timeout: 15000 });
 }
 
-function stopTracking(){
-  if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
-  tracking=false;setStatus('stopped');
-  document.getElementById('btnStart').style.display='flex';
-  document.getElementById('btnStop').style.display='none';
+function stopTracking() {
+  if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  tracking = false;
+  setStatus('stopped');
+  document.getElementById('btnStart').style.display = 'flex';
+  document.getElementById('btnStop').style.display = 'none';
   document.getElementById('bgBanner').classList.remove('show');
-  if(db)_update(_ref(db,`companies/${companyCode}/employees/${empId}`),{online:false});
+  if (db) {
+    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
+  }
 }
 
-function onPosition(pos){
-  const lat=pos.coords.latitude,lng=pos.coords.longitude,acc=Math.round(pos.coords.accuracy),ts=Date.now();
-  lastLat=lat;lastLng=lng;
-  trailPoints.push({lat,lng,ts});
-  if(trailPoints.length>50)trailPoints.shift();
-  document.getElementById('coordLat').textContent=lat.toFixed(5);
-  document.getElementById('coordLng').textContent=lng.toFixed(5);
-  document.getElementById('coordAcc').textContent='± '+acc+' m';
-  updateCount++;document.getElementById('updateCount').textContent=updateCount;
-  updateMapMarker(lat,lng,acc);
-  if(updateCount===1)map.flyTo([lat,lng],16,{duration:1.5});
-  if(db)_update(_ref(db,`companies/${companyCode}/employees/${empId}`),{lat,lng,online:true,lastSeen:ts,accuracy:acc,trail:trailPoints});
+function onPosition(pos) {
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  const acc = Math.round(pos.coords.accuracy);
+  const ts  = Date.now();
+
+  lastLat = lat; lastLng = lng;
+
+  trailPoints.push({ lat, lng, ts });
+  if (trailPoints.length > 50) trailPoints.shift();
+
+  document.getElementById('coordLat').textContent = lat.toFixed(5);
+  document.getElementById('coordLng').textContent = lng.toFixed(5);
+  document.getElementById('coordAcc').textContent = '± ' + acc + ' m';
+
+  updateCount++;
+  document.getElementById('updateCount').textContent = updateCount;
+
+  updateMapMarker(lat, lng, acc);
+  if (updateCount === 1) map.flyTo([lat, lng], 16, { duration: 1.5 });
+
+  if (db) {
+    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
+      lat, lng, online: true, lastSeen: ts, accuracy: acc, trail: trailPoints
+    });
+  }
 }
 
-function onGeoError(err){
-  if(err.code===1){document.getElementById('permScreen').classList.add('show');}
-  else if(err.code===2){showError('GPS indisponible. Activez la localisation.');setStatus('error');}
-  else{showError('Délai dépassé. Vérifiez votre GPS.');setStatus('error');}
+function onGeoError(err) {
+  if (err.code === 1) {
+    document.getElementById('permScreen').classList.add('show');
+  } else if (err.code === 2) {
+    showError('GPS indisponible. Activez la localisation.');
+    setStatus('error');
+  } else {
+    showError('Délai dépassé. Vérifiez votre GPS.');
+    setStatus('error');
+  }
 }
 
-function setStatus(state){
-  const pill=document.getElementById('statusPill'),dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
-  pill.className='status-pill';dot.className='status-dot-anim';
-  const s={requesting:['','','Obtention de la position...'],active:['active','active','Position partagée en direct'],stopped:['error','error','Partage arrêté'],error:['error','error','Erreur de géolocalisation']};
-  const[pc,dc,lb]=s[state]||['','','Prêt à partager'];
-  if(pc)pill.classList.add(pc);if(dc)dot.classList.add(dc);txt.textContent=lb;
+function setStatus(state) {
+  const pill = document.getElementById('statusPill');
+  const dot  = document.getElementById('statusDot');
+  const txt  = document.getElementById('statusText');
+  pill.className = 'status-pill';
+  dot.className  = 'status-dot-anim';
+  const states = {
+    requesting: ['', '', 'Obtention de la position...'],
+    active:     ['active', 'active', 'Position partagée en direct'],
+    stopped:    ['error', 'error', 'Partage arrêté'],
+    error:      ['error', 'error', 'Erreur de géolocalisation']
+  };
+  const [pc, dc, lb] = states[state] || ['', '', 'Prêt à partager'];
+  if (pc) pill.classList.add(pc);
+  if (dc) dot.classList.add(dc);
+  txt.textContent = lb;
 }
 
-function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),5000);}
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
 
+// ── INIT ──
 initMap();
 </script>
 </body>
