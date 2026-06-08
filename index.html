@@ -442,7 +442,111 @@ input:focus { border-color: var(--accent); }
 }
 .nav-map-btn:hover { background: rgba(0,229,160,.08); }
 
-/* ── NAVIGATION HUD ── */
+/* ══ PLACES PANEL ══ */
+.places-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1800;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.places-overlay.show{opacity:1;pointer-events:all;}
+.places-panel{
+  position:fixed;top:0;right:0;bottom:0;width:340px;max-width:100vw;
+  background:var(--surface);border-left:1px solid var(--border);
+  z-index:1900;display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.22,.68,0,1.2);
+  box-shadow:-8px 0 40px rgba(0,0,0,.4);
+}
+.places-panel.show{transform:translateX(0);}
+.places-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.places-header h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+.places-close{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.places-close:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+.places-search-wrap{
+  display:flex;align-items:center;gap:8px;padding:12px 14px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--surface2);
+}
+.places-search-icon{font-size:1rem;flex-shrink:0;}
+.places-search-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;
+}
+.places-search-input::placeholder{color:var(--text3);}
+.places-search-clear{
+  background:none;border:none;color:var(--text3);cursor:pointer;
+  font-size:.85rem;padding:2px 4px;border-radius:4px;
+}
+.places-list{flex:1;overflow-y:auto;padding-bottom:20px;}
+.places-nominatim{flex-shrink:0;border-bottom:1px solid var(--border);}
+.places-section-label{
+  font-size:.68rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--text3);padding:10px 16px 4px;
+}
+.places-group{margin-bottom:4px;}
+.places-group-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 16px 7px;cursor:pointer;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:1;
+}
+.places-group-title{
+  font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:8px;
+}
+.places-group-count{
+  font-size:.68rem;background:var(--accent);color:#000;
+  padding:1px 7px;border-radius:20px;font-weight:700;
+}
+.places-group-chevron{color:var(--text3);font-size:.75rem;transition:transform .2s;}
+.places-group.collapsed .places-group-chevron{transform:rotate(-90deg);}
+.places-group-items{display:flex;flex-direction:column;}
+.places-group.collapsed .places-group-items{display:none;}
+.places-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.03);
+  cursor:pointer;transition:background .12s;
+}
+.places-item:hover,.places-item:active{background:rgba(0,229,160,.06);}
+.places-item-icon{
+  width:30px;height:30px;border-radius:8px;background:var(--surface2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;flex-shrink:0;
+}
+.places-item-body{flex:1;min-width:0;}
+.places-item-name{font-size:.83rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.places-item-coords{font-size:.67rem;color:var(--text3);margin-top:1px;}
+.places-item-nav{
+  background:rgba(0,229,160,.12);border:1px solid rgba(0,229,160,.25);
+  color:var(--accent);padding:4px 9px;border-radius:7px;
+  font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  transition:all .12s;
+}
+.places-item-nav:hover{background:var(--accent);color:#000;}
+.places-empty{
+  text-align:center;padding:32px 20px;color:var(--text3);font-size:.85rem;
+}
+.places-nom-item{
+  display:flex;align-items:center;gap:10px;padding:8px 16px;
+  border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .12s;
+}
+.places-nom-item:hover{background:rgba(0,153,255,.07);}
+.places-nom-name{font-size:.82rem;font-weight:600;color:var(--text);}
+.places-nom-sub{font-size:.68rem;color:var(--text3);margin-top:1px;}
+.places-nom-spinner{text-align:center;padding:12px;font-size:.8rem;color:var(--text3);}
+
+/* Marqueur lieu sélectionné */
+.place-pin-label{
+  background:rgba(0,229,160,.92);color:#000;font-size:.72rem;font-weight:800;
+  padding:3px 9px;border-radius:8px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+
 .nav-hud {
   position: fixed;
   top: 53px; left: 0; right: 0;
@@ -675,6 +779,7 @@ input:focus { border-color: var(--accent); }
       <button class="btn btn-outline btn-sm btn-icon" onclick="fitAllMarkers()" title="Vue globale">🗺</button>
       <button class="btn btn-outline btn-sm btn-icon" onclick="toggleHistory()" title="Historique">📍</button>
       <button class="btn btn-outline btn-sm btn-icon" onclick="locatePatron()" title="Ma position">📡</button>
+      <button class="btn btn-outline btn-sm btn-icon" onclick="openPlacesPanel()" title="Rechercher un lieu">🔍</button>
     </div>
 
     <div id="patronMarkerInfo">📡 Ma position active</div>
@@ -823,6 +928,33 @@ input:focus { border-color: var(--accent); }
     </button>
 
   </div>
+</div>
+
+<!-- ══ PLACES PANEL ══ -->
+<div class="places-overlay" id="placesOverlay" onclick="closePlacesPanel()"></div>
+<div class="places-panel" id="placesPanel">
+  <div class="places-header">
+    <h2>🗺️ Quartiers &amp; Villes</h2>
+    <button class="places-close" onclick="closePlacesPanel()">✕</button>
+  </div>
+
+  <!-- Barre de recherche -->
+  <div class="places-search-wrap">
+    <span class="places-search-icon">🔍</span>
+    <input type="text" id="placesSearchInput" class="places-search-input"
+      placeholder="Rechercher un quartier, une ville…"
+      oninput="filterPlaces(this.value)" autocomplete="off" spellcheck="false">
+    <button class="places-search-clear" id="placesClear" onclick="clearPlacesSearch()" style="display:none">✕</button>
+  </div>
+
+  <!-- Résultats recherche Nominatim -->
+  <div class="places-nominatim" id="placesNominatim" style="display:none">
+    <div class="places-section-label">🌐 Résultats web</div>
+    <div id="placesNominatimList"></div>
+  </div>
+
+  <!-- Liste locale -->
+  <div class="places-list" id="placesList"></div>
 </div>
 
 <!-- ── NAVIGATION HUD (intégrée dans la carte) ── -->
@@ -1354,6 +1486,237 @@ function locatePatron() {
 }
 
 // ══════════════════════════════════════════════
+//  DONNÉES LIEUX — Quartiers Lomé + Villes Togo
+// ══════════════════════════════════════════════
+const TOGO_PLACES = {
+  "📍 Quartiers de Lomé": [
+    {name:"Adidogomé",lat:6.1728,lng:1.1878},{name:"Adoboukomé",lat:6.1650,lng:1.2100},
+    {name:"Adogbéto",lat:6.1580,lng:1.1950},{name:"Aflao Gakli",lat:6.1000,lng:1.1980},
+    {name:"Agbalépédogan",lat:6.1350,lng:1.2080},{name:"Agbata",lat:6.1200,lng:1.2150},
+    {name:"Agoè",lat:6.1950,lng:1.2050},{name:"Agoè Nyivé",lat:6.2050,lng:1.1950},
+    {name:"Akatahoué",lat:6.1100,lng:1.2200},{name:"Akodésawa",lat:6.1400,lng:1.2300},
+    {name:"Akodesséwa",lat:6.1380,lng:1.2350},{name:"Amadahomé",lat:6.1780,lng:1.1780},
+    {name:"Amoutiévé",lat:6.1280,lng:1.2180},{name:"Anékoukou",lat:6.1180,lng:1.2050},
+    {name:"Apédokoè",lat:6.1450,lng:1.1800},{name:"Assiyéyé",lat:6.1300,lng:1.1900},
+    {name:"Attiégou",lat:6.1600,lng:1.2200},{name:"Avépozo",lat:6.1500,lng:1.2600},
+    {name:"Avedji",lat:6.1550,lng:1.2100},{name:"Avikomé",lat:6.1320,lng:1.2250},
+    {name:"Baguida",lat:6.1200,lng:1.3000},{name:"Bè",lat:6.1250,lng:1.2400},
+    {name:"Bè Klikamé",lat:6.1230,lng:1.2380},{name:"Bè Apéyémé",lat:6.1270,lng:1.2420},
+    {name:"Bè Kpota",lat:6.1210,lng:1.2450},{name:"Cacavéli",lat:6.1700,lng:1.2300},
+    {name:"Camp de Lomé",lat:6.1380,lng:1.2120},{name:"Djidjolé",lat:6.1800,lng:1.2150},
+    {name:"Doumasséssé",lat:6.1480,lng:1.2020},{name:"Doulassamé",lat:6.1550,lng:1.1950},
+    {name:"Enagnon",lat:6.1350,lng:1.2150},{name:"Fafali",lat:6.3381,lng:1.6082},
+    {name:"Gbadago",lat:6.1620,lng:1.2050},{name:"Gbossimé",lat:6.2200,lng:1.2050},
+    {name:"Hanoukopé",lat:6.1350,lng:1.2020},{name:"Hédzranawoé",lat:6.1700,lng:1.1980},
+    {name:"Kégué",lat:6.1580,lng:1.2280},{name:"Kélékougan",lat:6.1450,lng:1.2100},
+    {name:"Kodjoviakopé",lat:6.1300,lng:1.2080},{name:"Komlanmè",lat:6.1400,lng:1.2020},
+    {name:"Kpogan",lat:6.1280,lng:1.2100},{name:"Lacs",lat:6.1500,lng:1.2500},
+    {name:"Légbassito",lat:6.2350,lng:1.1850},{name:"Logopé",lat:6.1420,lng:1.1950},
+    {name:"Lomé Commune",lat:6.1375,lng:1.2123},{name:"Madina",lat:6.1650,lng:1.2150},
+    {name:"Mairie",lat:6.1370,lng:1.2100},{name:"Mami Lomé",lat:6.1300,lng:1.2200},
+    {name:"Mango Agbavi",lat:6.1920,lng:1.2020},{name:"Mission Tové",lat:6.1480,lng:1.2180},
+    {name:"Nyékonakpoè",lat:6.1320,lng:1.2000},{name:"Nukafu",lat:6.1750,lng:1.2250},
+    {name:"Odawna",lat:6.1330,lng:1.2280},{name:"Port Lomé",lat:6.1200,lng:1.2700},
+    {name:"Quartier Congo",lat:6.1360,lng:1.2080},{name:"Sagbado",lat:6.1900,lng:1.1900},
+    {name:"Sanguéra",lat:6.2500,lng:1.1700},{name:"Sito",lat:6.1800,lng:1.2050},
+    {name:"Souza",lat:6.1100,lng:1.2300},{name:"Totsi",lat:6.1700,lng:1.2400},
+    {name:"Vakpossito",lat:6.2000,lng:1.2150},{name:"Wuiti",lat:6.2150,lng:1.2000},
+    {name:"Zanguéra",lat:6.2480,lng:1.1720},{name:"Zongo",lat:6.1400,lng:1.2180},
+    {name:"Zopopé",lat:6.1500,lng:1.2050},
+  ],
+  "🌊 Région Maritime": [
+    {name:"Aného",lat:6.2250,lng:1.5950},{name:"Tabligbo",lat:6.5850,lng:1.5020},
+    {name:"Tsévié",lat:6.4250,lng:1.2150},{name:"Vogan",lat:6.3900,lng:1.5350},
+    {name:"Kpalimé",lat:6.8985,lng:0.6274},{name:"Notsé",lat:6.9500,lng:1.1700},
+    {name:"Tohoun",lat:6.9500,lng:1.5000},{name:"Kévé",lat:6.4150,lng:0.9380},
+    {name:"Agou",lat:6.8500,lng:0.7500},{name:"Adéta",lat:6.8800,lng:0.7200},
+    {name:"Anfoin",lat:6.2000,lng:1.5500},{name:"Lomé",lat:6.1375,lng:1.2123},
+  ],
+  "🌿 Région des Plateaux": [
+    {name:"Atakpamé",lat:7.5333,lng:1.1333},{name:"Kpalimé",lat:6.8985,lng:0.6274},
+    {name:"Badou",lat:7.5870,lng:0.6000},{name:"Notsé",lat:6.9500,lng:1.1700},
+    {name:"Amlamé",lat:7.0800,lng:0.8700},{name:"Danyi",lat:7.1200,lng:0.6500},
+    {name:"Dzogbégan",lat:7.1500,lng:0.6800},{name:"Glei",lat:7.3800,lng:0.8800},
+    {name:"Kouvé",lat:6.7000,lng:1.0500},{name:"Litimé",lat:7.4500,lng:0.5500},
+    {name:"Anié",lat:7.7500,lng:1.2000},{name:"Blitta",lat:8.3200,lng:0.9900},
+    {name:"Wahala",lat:7.2300,lng:1.3000},
+  ],
+  "🏙️ Région Centrale": [
+    {name:"Sokodé",lat:8.9833,lng:1.1333},{name:"Sotouboua",lat:8.5700,lng:0.9800},
+    {name:"Blitta",lat:8.3200,lng:0.9900},{name:"Tchamba",lat:9.0330,lng:1.4170},
+    {name:"Fazao",lat:8.7500,lng:0.9000},{name:"Kabou",lat:9.4500,lng:0.8800},
+    {name:"Alédjo",lat:9.0500,lng:1.1000},{name:"Djama",lat:9.2000,lng:1.3000},
+  ],
+  "⛰️ Région de la Kara": [
+    {name:"Kara",lat:9.5500,lng:1.1833},{name:"Bassar",lat:9.2500,lng:0.7833},
+    {name:"Bafilo",lat:9.3500,lng:1.2700},{name:"Niamtougou",lat:9.7700,lng:1.1000},
+    {name:"Pagouda",lat:9.7600,lng:1.3500},{name:"Kandé",lat:9.9500,lng:1.0600},
+    {name:"Kétao",lat:9.7500,lng:1.3700},{name:"Pya",lat:9.7000,lng:1.2000},
+    {name:"Barkoissi",lat:10.0800,lng:0.6500},
+  ],
+  "🌾 Région des Savanes": [
+    {name:"Dapaong",lat:10.8667,lng:0.2000},{name:"Mango",lat:10.3667,lng:0.4667},
+    {name:"Sansanné-Mango",lat:10.3667,lng:0.4667},{name:"Cinkassé",lat:11.0000,lng:0.0800},
+    {name:"Tône",lat:10.9000,lng:0.3500},{name:"Oti",lat:10.1500,lng:0.5000},
+    {name:"Kpendjal",lat:10.9500,lng:0.6500},{name:"Tambigou",lat:10.7000,lng:0.3000},
+    {name:"Mandouri",lat:10.8000,lng:0.5500},
+  ],
+};
+
+// ── Marqueur lieu sélectionné ──
+let placeMarker = null;
+let nominatimTimer = null;
+
+function openPlacesPanel() {
+  document.getElementById('placesOverlay').classList.add('show');
+  document.getElementById('placesPanel').classList.add('show');
+  renderPlacesList('');
+  setTimeout(() => document.getElementById('placesSearchInput').focus(), 350);
+}
+
+function closePlacesPanel() {
+  document.getElementById('placesOverlay').classList.remove('show');
+  document.getElementById('placesPanel').classList.remove('show');
+}
+
+function renderPlacesList(query) {
+  const list = document.getElementById('placesList');
+  const q = query.trim().toLowerCase();
+  let html = '';
+  let totalResults = 0;
+
+  Object.entries(TOGO_PLACES).forEach(([group, places]) => {
+    const filtered = q
+      ? places.filter(p => p.name.toLowerCase().includes(q))
+      : places;
+    if (!filtered.length) return;
+    totalResults += filtered.length;
+    html += `
+      <div class="places-group" id="pg_${group.replace(/\s+/g,'_')}">
+        <div class="places-group-header" onclick="toggleGroup(this)">
+          <span class="places-group-title">
+            ${group}
+            <span class="places-group-count">${filtered.length}</span>
+          </span>
+          <span class="places-group-chevron">▼</span>
+        </div>
+        <div class="places-group-items">
+          ${filtered.map(p => `
+            <div class="places-item" onclick="goToPlace(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">
+              <div class="places-item-icon">📍</div>
+              <div class="places-item-body">
+                <div class="places-item-name">${highlightMatch(p.name, q)}</div>
+                <div class="places-item-coords">${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</div>
+              </div>
+              <button class="places-item-nav" onclick="event.stopPropagation();navToPlace(${p.lat},${p.lng},'${p.name.replace(/'/g,"\\'")}')">🏍️ Y aller</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  });
+
+  if (!totalResults && !q) {
+    html = '<div class="places-empty">Aucun lieu disponible</div>';
+  } else if (!totalResults && q) {
+    html = `<div class="places-empty">Aucun résultat local pour "<b>${query}</b>"<br><span style="font-size:.75rem;opacity:.6">Les résultats web apparaissent ci-dessus</span></div>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function highlightMatch(name, q) {
+  if (!q) return name;
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return name.replace(re, '<mark style="background:rgba(0,229,160,.3);color:inherit;border-radius:2px">$1</mark>');
+}
+
+function toggleGroup(header) {
+  header.closest('.places-group').classList.toggle('collapsed');
+}
+
+function filterPlaces(query) {
+  const clearBtn = document.getElementById('placesClear');
+  clearBtn.style.display = query ? 'block' : 'none';
+  renderPlacesList(query);
+
+  // Recherche Nominatim avec debounce
+  clearTimeout(nominatimTimer);
+  if (query.length >= 3) {
+    nominatimTimer = setTimeout(() => searchNominatim(query), 600);
+  } else {
+    document.getElementById('placesNominatim').style.display = 'none';
+  }
+}
+
+function clearPlacesSearch() {
+  document.getElementById('placesSearchInput').value = '';
+  document.getElementById('placesClear').style.display = 'none';
+  document.getElementById('placesNominatim').style.display = 'none';
+  renderPlacesList('');
+  document.getElementById('placesSearchInput').focus();
+}
+
+async function searchNominatim(query) {
+  const nomBox = document.getElementById('placesNominatim');
+  const nomList = document.getElementById('placesNominatimList');
+  nomBox.style.display = 'block';
+  nomList.innerHTML = '<div class="places-nom-spinner">🔄 Recherche en cours…</div>';
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query+' Togo')}&format=json&limit=5&countrycodes=tg&accept-language=fr`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+    const data = await res.json();
+    if (!data.length) {
+      nomList.innerHTML = '<div class="places-nom-spinner">Aucun résultat web</div>';
+      return;
+    }
+    nomList.innerHTML = data.map(r => `
+      <div class="places-nom-item" onclick="goToPlace(${r.lat},${r.lon},'${r.display_name.split(',')[0].replace(/'/g,"\\'")}')">
+        <div style="font-size:1.1rem;flex-shrink:0">🌐</div>
+        <div>
+          <div class="places-nom-name">${r.display_name.split(',')[0]}</div>
+          <div class="places-nom-sub">${r.display_name.split(',').slice(1,3).join(',').trim()}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    nomList.innerHTML = '<div class="places-nom-spinner">Erreur réseau</div>';
+  }
+}
+
+function goToPlace(lat, lng, name) {
+  closePlacesPanel();
+  // Supprimer ancien marqueur lieu
+  if (placeMarker) { map.removeLayer(placeMarker); placeMarker = null; }
+  // Créer marqueur
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="width:14px;height:14px;background:var(--accent);border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px rgba(0,229,160,.6)"></div>
+      <div class="place-pin-label">${name}</div>
+    </div>`,
+    iconSize: [120, 40], iconAnchor: [60, 8]
+  });
+  placeMarker = L.marker([lat, lng], { icon, zIndexOffset: 400 }).addTo(map);
+  map.flyTo([lat, lng], 16, { duration: 1 });
+  showToast('📍 ' + name);
+}
+
+function navToPlace(lat, lng, name) {
+  closePlacesPanel();
+  // Utiliser le moteur de navigation intégré
+  navTargetLat = lat;
+  navTargetLng = lng;
+  navTargetName = name;
+  // Pré-remplir le modal nav
+  document.getElementById('navEmpName').textContent = name;
+  document.getElementById('navDestNameFull').textContent = name;
+  const ini = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('navDestIco').textContent = ini || '📍';
+  patronSelectTransport(patronNavTransport);
+  document.getElementById('navModal').classList.add('show');
+}
+
+// ══════════════════════════════════════════════
 //  NAVIGATION INTÉGRÉE — moteur complet
 // ══════════════════════════════════════════════
 const NAV_SPEEDS = { moto: 40, car: 35, walk: 5, bike: 15 };
@@ -1508,10 +1871,39 @@ function decodeManeuver(step) {
 // ── Démarrer la navigation intégrée ──
 async function startInternalNav() {
   if (!navTargetLat) return;
+
+  // Si position pas encore disponible → la demander automatiquement
   if (!patronLat) {
-    showToast('Activez 📡 votre position d\'abord');
-    return;
+    closeModal('navModal');
+    showToast('📡 Obtention de votre position…');
+    try {
+      await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(pos => {
+          patronLat = pos.coords.latitude;
+          patronLng = pos.coords.longitude;
+          // Placer le marqueur patron si pas encore fait
+          if (!patronMarker) {
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="position:relative;width:50px;height:50px">
+                <div style="width:50px;height:50px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);border-radius:50%;border:3px solid #fff;box-shadow:0 3px 16px rgba(108,92,231,.6);display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;z-index:1">📡</div>
+                <div style="position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);background:rgba(108,92,231,.9);color:#fff;font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:8px;white-space:nowrap">Moi</div>
+              </div>`,
+              iconSize: [50, 50], iconAnchor: [25, 25]
+            });
+            patronMarker = L.marker([patronLat, patronLng], { icon, zIndexOffset: 500 }).addTo(map);
+          } else {
+            patronMarker.setLatLng([patronLat, patronLng]);
+          }
+          resolve();
+        }, reject, { enableHighAccuracy: true, timeout: 10000 });
+      });
+    } catch(e) {
+      showToast('❌ GPS refusé — autorisez la géolocalisation dans votre navigateur');
+      return;
+    }
   }
+
   closeModal('navModal');
   showToast('🔄 Calcul de l\'itinéraire...');
 
@@ -1740,8 +2132,9 @@ function updateNavHUD(speedKmh) {
   }
 }
 
-function recalcRoute() {
-  if (!patronLat || !navTargetLat) return;
+async function recalcRoute() {
+  if (!navTargetLat) return;
+  if (!patronLat) { showToast('Position GPS non disponible'); return; }
   showToast('🔄 Recalcul en cours…');
   // Nettoyer et recalculer
   const savedTransport = patronNavTransport;
