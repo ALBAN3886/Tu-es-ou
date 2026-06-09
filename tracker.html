@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0c10">
 <title>TrackTeam — Ma position</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -556,7 +560,11 @@ body{
   <div class="bottom-panel">
     <div class="bg-banner" id="bgBanner">
       <span>🟢</span>
-      <span>Partage actif. Ne fermez pas le navigateur — vous pouvez le minimiser.</span>
+      <span id="bgBannerText">Partage actif. Écran maintenu allumé.</span>
+    </div>
+    <div class="bg-banner" id="bgWarnBanner" style="display:none;background:rgba(255,165,2,.12);border-color:rgba(255,165,2,.3);color:#ffa502">
+      <span>⚠️</span>
+      <span id="bgWarnText">Écran verrouillé — partage peut s'interrompre</span>
     </div>
     <div class="error-msg" id="errorMsg"></div>
     <div class="status-row">
@@ -804,27 +812,257 @@ window.addEventListener('firebaseReady',()=>{
 
 function listenPatronPosition(){
   if(!db) return;
-  // Écouter le nœud "patron" dans Firebase
-  // Le patron publie sa position dans companies/{code}/patron
   _onValue(_ref(db,`companies/${companyCode}/patron`), snap=>{
     const data=snap.val();
     if(data && data.lat && data.lng && data.online){
-      patronLat=+data.lat;
-      patronLng=+data.lng;
+      patronLat=+data.lat; patronLng=+data.lng;
       updatePatronMarker(patronLat,patronLng);
       updateDistanceAndEta();
       document.getElementById('patronBanner').classList.add('show');
       document.getElementById('patronOffline').classList.remove('show');
     } else {
-      // Patron hors ligne
       patronLat=null; patronLng=null;
       if(patronMarker){ map.removeLayer(patronMarker); patronMarker=null; }
       document.getElementById('patronBanner').classList.remove('show');
       document.getElementById('patronOffline').classList.add('show');
-      // Cacher après 5s si jamais de position reçue
       setTimeout(()=>{ document.getElementById('patronOffline').classList.remove('show'); },8000);
     }
   });
+}
+
+// ══════════════════════════════════════════════
+//  BACKGROUND ENGINE
+//  Wake Lock + Service Worker + Visibility API
+// ══════════════════════════════════════════════
+
+// ── 1. Service Worker inline (injecté dynamiquement) ──
+const SW_CODE = `
+self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+
+// Garder le SW vivant via un ping toutes les 20s
+let pingInterval = null;
+self.addEventListener('message', e => {
+  if (e.data === 'START_BG') {
+    if (pingInterval) clearInterval(pingInterval);
+    pingInterval = setInterval(() => {
+      self.clients.matchAll().then(clients => {
+        clients.forEach(c => c.postMessage('PING'));
+      });
+    }, 20000);
+  }
+  if (e.data === 'STOP_BG') {
+    if (pingInterval) clearInterval(pingInterval);
+  }
+});
+`;
+
+let swRegistration = null;
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return false;
+  try {
+    // Créer un Blob SW et l'enregistrer
+    const blob = new Blob([SW_CODE], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+    await navigator.serviceWorker.ready;
+    // Envoyer signal de démarrage
+    const sw = swRegistration.active || swRegistration.installing || swRegistration.waiting;
+    if (sw) sw.postMessage('START_BG');
+    // Écouter les pings pour garder la page "vivante"
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data === 'PING' && isTracking) {
+        // Forcer un envoi GPS si la page est en arrière-plan
+        if (document.visibilityState === 'hidden' && lastLat !== null) {
+          sendLocationToFirebase(lastLat, lastLng, lastAcc);
+        }
+      }
+    });
+    return true;
+  } catch(e) {
+    console.warn('SW non disponible:', e.message);
+    return false;
+  }
+}
+
+// ── 2. Wake Lock (empêche l'écran de s'éteindre) ──
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    document.getElementById('bgBannerText').textContent = 'Partage actif. Écran maintenu allumé 🔒';
+    // Si le wake lock est libéré (appel entrant, etc.), le reprendre automatiquement
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+      if (isTracking) setTimeout(requestWakeLock, 1000);
+    });
+  } catch(e) {
+    console.warn('Wake Lock refusé:', e.message);
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+// ── 3. Page Visibility API ──
+let visibilityInterval = null;
+let lastAcc = 20;
+
+document.addEventListener('visibilitychange', () => {
+  if (!isTracking) return;
+  if (document.visibilityState === 'hidden') {
+    // Arrière-plan : envoyer plus fréquemment via setInterval de secours
+    document.getElementById('bgWarnBanner').style.display = 'flex';
+    if (!visibilityInterval) {
+      visibilityInterval = setInterval(() => {
+        if (lastLat !== null) sendLocationToFirebase(lastLat, lastLng, lastAcc);
+      }, 15000); // toutes les 15s en arrière-plan
+    }
+  } else {
+    // Premier plan : arrêter l'interval de secours, reprendre le wake lock
+    document.getElementById('bgWarnBanner').style.display = 'none';
+    clearInterval(visibilityInterval);
+    visibilityInterval = null;
+    if (isTracking && !wakeLock) requestWakeLock();
+  }
+});
+
+// ── 4. Notification persistante ──
+async function showPersistentNotification() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+  if (Notification.permission === 'granted' && swRegistration) {
+    await swRegistration.showNotification('📍 TrackTeam actif', {
+      body: 'Votre position est partagée en temps réel.',
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%2300e5a0"/><text y=".9em" font-size="80" x="10">📍</text></svg>',
+      tag: 'trackteam-bg',
+      renotify: false,
+      silent: true,
+      requireInteraction: true,
+    });
+  }
+}
+
+function dismissPersistentNotification() {
+  if (swRegistration) swRegistration.getNotifications({ tag: 'trackteam-bg' }).then(notifs => notifs.forEach(n => n.close()));
+}
+
+// ── 5. Envoi Firebase centralisé ──
+let updateCount = 0;
+let isTracking = false;
+let watchId = null;
+
+function sendLocationToFirebase(lat, lng, acc) {
+  if (!db || !_ref || !_update) return;
+  _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
+    lat, lng, acc: Math.round(acc),
+    timestamp: Date.now(),
+    online: true,
+    name: empName,
+  });
+  updateCount++;
+  document.getElementById('updateCount').textContent = updateCount;
+  document.getElementById('updateInfo').style.display = 'flex';
+}
+
+// ── startTracking / stopTracking ──
+async function startTracking() {
+  if (!pinUnlocked) return;
+  if (!db) { showError('Connexion Firebase non prête, réessai…'); setTimeout(startTracking, 1000); return; }
+  if (isTracking) return;
+  if (!navigator.geolocation) { showError('Géolocalisation non supportée.'); return; }
+  isTracking = true;
+
+  // UI
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('btnStop').style.display = 'flex';
+  document.getElementById('bgBanner').style.display = 'flex';
+  document.getElementById('coordsRow').style.display = 'grid';
+  document.getElementById('statusDot').className = 'status-dot-anim active';
+  document.getElementById('statusText').textContent = 'Position partagée en direct';
+
+  // Wake Lock
+  await requestWakeLock();
+
+  // Service Worker background
+  await registerServiceWorker();
+
+  // Notification persistante
+  await showPersistentNotification();
+
+  // GPS watchPosition
+  watchId = navigator.geolocation.watchPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const acc = pos.coords.accuracy;
+    lastLat = lat; lastLng = lng; lastAcc = acc;
+
+    // Mise à jour UI
+    document.getElementById('coordLat').textContent = lat.toFixed(5);
+    document.getElementById('coordLng').textContent = lng.toFixed(5);
+    document.getElementById('coordAcc').textContent = '± ' + Math.round(acc) + ' m';
+
+    // Marqueur carte
+    updateMyMarker(lat, lng, acc);
+
+    // 1er fix → zoom
+    if (updateCount === 0) map.flyTo([lat, lng], 17, { duration: 1.5 });
+
+    // Envoi Firebase
+    sendLocationToFirebase(lat, lng, acc);
+
+    // Distance/ETA patron
+    updateDistanceAndEta();
+
+  }, err => {
+    if (err.code === err.PERMISSION_DENIED) {
+      document.getElementById('permScreen').classList.add('show');
+    }
+    showError('Erreur GPS : ' + err.message);
+    document.getElementById('statusDot').className = 'status-dot-anim error';
+    document.getElementById('statusText').textContent = 'Erreur GPS';
+  }, {
+    enableHighAccuracy: true,
+    maximumAge: 5000,
+    timeout: 15000
+  });
+}
+
+function stopTracking() {
+  isTracking = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearInterval(visibilityInterval); visibilityInterval = null;
+  releaseWakeLock();
+  dismissPersistentNotification();
+  if (swRegistration) {
+    const sw = swRegistration.active;
+    if (sw) sw.postMessage('STOP_BG');
+  }
+  // Firebase : marquer hors ligne
+  if (db && _ref && _update) {
+    _update(_ref(db, `companies/${companyCode}/employees/${empId}`), { online: false });
+  }
+  // UI
+  document.getElementById('btnStart').style.display = 'flex';
+  document.getElementById('btnStop').style.display = 'none';
+  document.getElementById('bgBanner').style.display = 'none';
+  document.getElementById('bgWarnBanner').style.display = 'none';
+  document.getElementById('statusDot').className = 'status-dot-anim';
+  document.getElementById('statusText').textContent = 'Partage arrêté';
+  updateCount = 0;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
 // ══════════════════════════════════════════════
@@ -1291,80 +1529,6 @@ function showToastNav(msg){
   clearTimeout(t._tid);t._tid=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2800);
 }
 
-// ══════════════════════════════════════════════
-//  TRACKING (partage position de l'employé)
-// ══════════════════════════════════════════════
-let watchId=null, updateCount=0, trailPoints=[], tracking=false;
-
-function startTracking(){
-  if(!pinUnlocked) return;
-  if(!navigator.geolocation){ showError('Géolocalisation non supportée.'); return; }
-  setStatus('requesting');
-  navigator.geolocation.getCurrentPosition(pos=>{
-    setStatus('active');
-    document.getElementById('btnStart').style.display='none';
-    document.getElementById('btnStop').style.display='flex';
-    document.getElementById('updateInfo').style.display='block';
-    document.getElementById('bgBanner').classList.add('show');
-    document.getElementById('coordsRow').style.display='grid';
-    tracking=true;
-    onPosition(pos);
-    watchId=navigator.geolocation.watchPosition(onPosition,onGeoError,{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
-    if(db) _onDisconnect(_ref(db,`companies/${companyCode}/employees/${empId}`)).update({online:false});
-    if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
-  },onGeoError,{enableHighAccuracy:true,timeout:15000});
-}
-
-function stopTracking(){
-  if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
-  tracking=false; setStatus('stopped');
-  document.getElementById('btnStart').style.display='flex';
-  document.getElementById('btnStop').style.display='none';
-  document.getElementById('bgBanner').classList.remove('show');
-  if(db) _update(_ref(db,`companies/${companyCode}/employees/${empId}`),{online:false});
-}
-
-function onPosition(pos){
-  const lat=pos.coords.latitude, lng=pos.coords.longitude;
-  const acc=Math.round(pos.coords.accuracy), ts=Date.now();
-  lastLat=lat; lastLng=lng;
-  trailPoints.push({lat,lng,ts});
-  if(trailPoints.length>50) trailPoints.shift();
-  document.getElementById('coordLat').textContent=lat.toFixed(5);
-  document.getElementById('coordLng').textContent=lng.toFixed(5);
-  document.getElementById('coordAcc').textContent='± '+acc+' m';
-  updateCount++;
-  document.getElementById('updateCount').textContent=updateCount;
-  updateMyMarker(lat,lng,acc);
-  if(updateCount===1) map.flyTo([lat,lng],16,{duration:1.5});
-  // Mettre à jour la distance vers le patron
-  updateDistanceAndEta();
-  if(db){
-    _update(_ref(db,`companies/${companyCode}/employees/${empId}`),{
-      lat,lng,online:true,lastSeen:ts,accuracy:acc,trail:trailPoints
-    });
-  }
-}
-
-function onGeoError(err){
-  if(err.code===1){ document.getElementById('permScreen').classList.add('show'); }
-  else if(err.code===2){ showError('GPS indisponible.'); setStatus('error'); }
-  else { showError('Délai GPS dépassé.'); setStatus('error'); }
-}
-
-function setStatus(state){
-  const pill=document.getElementById('statusPill'),dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
-  pill.className='status-pill'; dot.className='status-dot-anim';
-  const s={requesting:['','','Obtention de la position...'],active:['active','active','Position partagée en direct'],stopped:['error','error','Partage arrêté'],error:['error','error','Erreur GPS']};
-  const[pc,dc,lb]=s[state]||['','','Prêt'];
-  if(pc)pill.classList.add(pc); if(dc)dot.classList.add(dc); txt.textContent=lb;
-}
-
-function showError(msg){
-  const el=document.getElementById('errorMsg');
-  el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),5000);
-}
 
 // ── Fix hauteur mobile (barre d'adresse navigateur) ──
 function fixVh() {
@@ -1395,22 +1559,34 @@ fixVh(); // deuxième appel pour s'assurer que les dimensions sont correctes
 initMap();
 selectTransport('moto');
 
-// ── Démarrage auto du partage ──
-// Si pas de PIN : démarrer immédiatement
-// Si PIN requis : démarrer dès que le PIN est validé
+// ── Démarrage automatique — attend PIN + Firebase ──
 function autoStartTracking() {
-  if (pinUnlocked) {
-    // Petit délai pour que la carte soit bien rendue
-    setTimeout(() => startTracking(), 800);
-  } else {
-    // Surveiller la validation du PIN
-    const waitPin = setInterval(() => {
-      if (pinUnlocked) {
-        clearInterval(waitPin);
-        setTimeout(() => startTracking(), 500);
-      }
-    }, 300);
+  let pinOk = pinUnlocked;
+  // Firebase peut déjà être prêt si le module s'est chargé avant ce script
+  let fbOk  = !!db || !!window._firebaseReady;
+  if (fbOk && !db) { db=window._db; _ref=window._ref; _update=window._update; _onValue=window._onValue; _onDisconnect=window._onDisconnect; }
+
+  function tryStart() {
+    if (pinOk && fbOk) setTimeout(() => startTracking(), 400);
   }
+
+  // Surveiller le PIN si nécessaire
+  if (!pinOk) {
+    const waitPin = setInterval(() => {
+      if (pinUnlocked) { clearInterval(waitPin); pinOk = true; tryStart(); }
+    }, 200);
+  }
+
+  // Surveiller Firebase si pas encore prêt
+  if (!fbOk) {
+    window.addEventListener('firebaseReady', () => {
+      db=window._db; _ref=window._ref; _update=window._update;
+      _onValue=window._onValue; _onDisconnect=window._onDisconnect;
+      fbOk = true; tryStart();
+    }, { once: true });
+  }
+
+  tryStart();
 }
 autoStartTracking();
 </script>
