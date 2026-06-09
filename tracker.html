@@ -63,13 +63,12 @@ body{
 .emp-name{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;line-height:1.2;}
 .emp-code{font-size:.7rem;color:var(--text2);}
 
-/* ── MAP ── */
-#map{width:100%;height:100%;display:block;}
-
 /* Wrapper carte */
 .map-wrapper{
   position:relative;flex:1;min-height:0;overflow:hidden;
 }
+/* La hauteur réelle du #map est fixée via JS pour éviter le bug Android */
+#map{width:100%;height:100%;min-height:200px;display:block;background:#1a1f2e;}
 
 /* ── PATRON BANNER (affiché en haut de la carte quand patron est en ligne) ── */
 .patron-banner{
@@ -707,7 +706,11 @@ let lastLat=null, lastLng=null;
 let patronLat=null, patronLng=null;
 
 function initMap(){
-  // Centrer sur Lomé par défaut (pas toute l'Afrique)
+  // Forcer une hauteur initiale avant que Leaflet s'initialise
+  const mapEl = document.getElementById('map');
+  const initH = Math.max(200, window.innerHeight - 200);
+  mapEl.style.height = initH + 'px';
+
   map = L.map('map',{zoomControl:false,attributionControl:false}).setView([6.137,1.222],13);
   const sat = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']});
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
@@ -728,6 +731,16 @@ function initMap(){
   };
   tb.addTo(map);
   L.control.zoom({position:'topright'}).addTo(map);
+
+  // Recalculer la taille réelle après rendu complet
+  setTimeout(() => {
+    fixVh();
+    map.invalidateSize({ animate: false });
+  }, 300);
+  setTimeout(() => {
+    fixVh();
+    map.invalidateSize({ animate: false });
+  }, 800);
 }
 
 // Marqueur de l'employé (moi)
@@ -1355,16 +1368,30 @@ function showError(msg){
 
 // ── Fix hauteur mobile (barre d'adresse navigateur) ──
 function fixVh() {
-  const vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty('--vh', vh + 'px');
-  document.querySelector('.app-layout').style.height = window.innerHeight + 'px';
-  if (map) map.invalidateSize();
+  const totalH = window.innerHeight;
+  const header = document.querySelector('.app-header');
+  const bottom = document.querySelector('.bottom-panel');
+  const headerH = header ? header.offsetHeight : 56;
+  const bottomH = bottom ? bottom.offsetHeight : 130;
+  const mapH = Math.max(150, totalH - headerH - bottomH);
+
+  // Forcer la hauteur explicite en pixels sur le wrapper ET sur #map
+  const wrapper = document.querySelector('.map-wrapper');
+  if (wrapper) wrapper.style.height = mapH + 'px';
+  const mapEl = document.getElementById('map');
+  if (mapEl) mapEl.style.height = mapH + 'px';
+
+  document.querySelector('.app-layout').style.height = totalH + 'px';
+  if (map) {
+    map.invalidateSize({ animate: false });
+  }
 }
 fixVh();
 window.addEventListener('resize', fixVh);
 window.addEventListener('orientationchange', () => setTimeout(fixVh, 300));
 
 // ── INIT ──
+fixVh(); // deuxième appel pour s'assurer que les dimensions sont correctes
 initMap();
 selectTransport('moto');
 
