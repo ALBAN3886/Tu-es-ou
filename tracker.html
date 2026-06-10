@@ -13,7 +13,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, update, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, update, push, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDJG36CAbwnBVAv8kzq0L0zz22BgQs-U70",
   authDomain: "mapaet-fc2bb.firebaseapp.com",
@@ -28,6 +28,7 @@ const db = getDatabase(app);
 window._db = db;
 window._ref = ref;
 window._update = update;
+window._push = push;
 window._onValue = onValue;
 window._onDisconnect = onDisconnect;
 window._firebaseReady = true;
@@ -958,14 +959,39 @@ let updateCount = 0;
 let isTracking = false;
 let watchId = null;
 
+// Dernier point enregistré (pour éviter les doublons proches)
+let _lastPushedLat = null, _lastPushedLng = null;
+
 function sendLocationToFirebase(lat, lng, acc) {
   if (!db || !_ref || !_update) return;
+  const now = Date.now();
   _update(_ref(db, `companies/${companyCode}/employees/${empId}`), {
     lat, lng, acc: Math.round(acc),
-    timestamp: Date.now(),
+    timestamp: now,
     online: true,
     name: empName,
   });
+
+  // ── Historique des trajets ──
+  // On pousse seulement si déplacement > ~10 m ou premier point
+  const MIN_DIST_M = 10;
+  let shouldPush = true;
+  if (_lastPushedLat !== null) {
+    const R = 6371000;
+    const dLat = (lat - _lastPushedLat) * Math.PI / 180;
+    const dLng = (lng - _lastPushedLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(_lastPushedLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    if (dist < MIN_DIST_M) shouldPush = false;
+  }
+  if (shouldPush && window._push) {
+    const dateKey = new Date(now).toISOString().slice(0,10); // "YYYY-MM-DD"
+    window._push(window._ref(db, `companies/${companyCode}/positions/${empId}/${dateKey}`), {
+      lat, lng, acc: Math.round(acc), ts: now, name: empName
+    });
+    _lastPushedLat = lat; _lastPushedLng = lng;
+  }
+
   updateCount++;
   document.getElementById('updateCount').textContent = updateCount;
   document.getElementById('updateInfo').style.display = 'flex';
